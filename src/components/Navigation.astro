@@ -1,0 +1,152 @@
+---
+import type { Translations, SupportedLocale } from '../i18n';
+import { localePath, getAlternateLocales } from '../i18n';
+
+interface Props {
+  t: Translations;
+  locale: SupportedLocale;
+  currentPath: string;
+}
+
+const { t, locale, currentPath } = Astro.props;
+const alternates = getAlternateLocales(locale);
+
+const navLinks = [
+  { key: 'home', path: '/' },
+  { key: 'authors', path: '/authors' },
+  { key: 'erratum', path: '/erratum' },
+  { key: 'feedback', path: '/feedback' },
+] as const;
+
+function isActive(path: string) {
+  const full = localePath(locale, path);
+  if (path === '/') return currentPath === full || currentPath === '/';
+  return currentPath.startsWith(full);
+}
+---
+
+<header class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <!-- Logo -->
+    <a
+      href={localePath(locale, '/')}
+      class="flex items-center gap-2 text-lg font-bold text-slate-900 transition-colors hover:text-primary-600"
+    >
+      <span class="text-2xl">📈</span>
+      <span class="hidden sm:inline">{t.siteTitle}</span>
+    </a>
+
+    <!-- Desktop nav -->
+    <nav class="hidden items-center gap-1 md:flex">
+      {
+        navLinks.map(({ key, path }) => (
+          <a
+            href={localePath(locale, path)}
+            class={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              isActive(path)
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            {t.nav[key]}
+          </a>
+        ))
+      }
+    </nav>
+
+    <!-- Language switcher + mobile menu -->
+    <div class="flex items-center gap-2">
+      <!-- Language switcher -->
+      <div class="flex items-center gap-1 rounded-md border border-slate-200 p-0.5">
+        <a
+          href={localePath('en', currentPath.replace(/^\/(zh)/, '') || '/')}
+          class={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+            locale === 'en'
+              ? 'bg-primary-600 text-white'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          EN
+        </a>
+        <a
+          href={localePath('zh', currentPath.replace(/^\/(en)/, '') || '/')}
+          class={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+            locale === 'zh'
+              ? 'bg-primary-600 text-white'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          中文
+        </a>
+      </div>
+
+      <!-- Mobile menu button -->
+      <button
+        id="mobile-menu-btn"
+        aria-label="Toggle menu"
+        class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+      >
+        <svg
+          id="menu-icon"
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+        <svg
+          id="close-icon"
+          class="hidden h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile nav -->
+  <div id="mobile-menu" class="hidden border-t border-slate-100 bg-white md:hidden">
+    <nav class="flex flex-col gap-1 px-4 py-3">
+      {
+        navLinks.map(({ key, path }) => (
+          <a
+            href={localePath(locale, path)}
+            class={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              isActive(path)
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            {t.nav[key]}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>
+
+<script>
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+  const menuIcon = document.getElementById('menu-icon');
+  const closeIcon = document.getElementById('close-icon');
+
+  btn?.addEventListener('click', () => {
+    const isOpen = !menu?.classList.contains('hidden');
+    menu?.classList.toggle('hidden', isOpen);
+    menuIcon?.classList.toggle('hidden', !isOpen);
+    closeIcon?.classList.toggle('hidden', isOpen);
+  });
+</script>
