@@ -4,8 +4,8 @@ export const zh: Translations = {
   lang: 'zh',
   dir: 'ltr',
   // Site meta
-  siteTitle: 'PyTorch 时间序列',
-  siteDescription: '使用 PyTorch 和深度学习进行时间序列预测与分析的全面指南。',
+  siteTitle: 'Time Series with PyTorch',
+  siteDescription: 'Modern Deep Learning Toolkit for Real-World Forecasting Challenges.',
 
   // Navigation
   nav: {
@@ -18,9 +18,9 @@ export const zh: Translations = {
   // Hero / Book intro
   hero: {
     badge: '现已上市',
-    title: 'PyTorch 时间序列',
+    title: 'Time Series with PyTorch',
     subtitle:
-      '使用 PyTorch 掌握时间序列分析与预测。从经典方法到最前沿的深度学习架构，一网打尽。',
+      'Modern Deep Learning Toolkit for Real-World Forecasting Challenges.',
     buyNow: '立即购买',
     learnMore: '了解更多',
     publisherLabel: '出版社',
@@ -32,7 +32,7 @@ export const zh: Translations = {
     sectionTitle: '关于本书',
     sectionSubtitle: '使用深度学习进行现代时间序列分析的实践之旅',
     description:
-      '《PyTorch 时间序列》是您使用 PyTorch 构建强大预测和分析系统的权威指南。无论您是数据科学家、机器学习工程师还是研究人员，本书都提供了应对现实世界时间序列挑战所需的理论基础和实践技能。',
+      '《Time Series with PyTorch》是您使用 PyTorch 构建强大预测和分析系统的权威指南。无论您是数据科学家、机器学习工程师还是研究人员，本书都提供了应对现实世界时间序列挑战所需的理论基础和实践技能。',
     description2:
       '本书从时间序列分析的基础知识入手，逐步介绍深度学习架构——从循环网络（RNN、LSTM）到基于 Transformer 的模型和神经常微分方程——为您提供现代时间序列工作的完整工具包。',
     features: [
@@ -193,7 +193,7 @@ export const zh: Translations = {
 
   // Footer
   footer: {
-    rights: '© 2025 马磊 & Graeme Davidson。保留所有权利。',
+    rights: '© 2026 Graeme Davidson & 马磊。保留所有权利。',
     builtWith: '使用',
     navigation: '导航',
   },

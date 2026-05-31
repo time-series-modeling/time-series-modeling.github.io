@@ -19,7 +19,7 @@ export const en = {
     badge: 'Now Available',
     title: 'Time Series with PyTorch',
     subtitle:
-      'Master time series analysis and forecasting using PyTorch. From classical methods to state-of-the-art deep learning architectures.',
+      'Modern Deep Learning Toolkit for Real-World Forecasting Challenges.',
     buyNow: 'Buy Now',
     learnMore: 'Learn More',
     publisherLabel: 'Published by',
