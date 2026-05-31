@@ -104,18 +104,6 @@ export const en = {
     learnMoreAbout: 'Learn more about the authors',
     list: [
       {
-        name: 'Lei Ma',
-        title: 'Machine Learning Researcher & Author',
-        bio: `Lei Ma is a machine learning researcher and educator with expertise in deep learning, time series analysis, and scientific computing. He has contributed to open-source projects and research in neural networks applied to physical and temporal data. Lei is passionate about making advanced machine learning concepts accessible through clear explanations and practical examples.`,
-        expertise: ['Deep Learning', 'Time Series Analysis', 'Neural ODEs', 'PyTorch', 'Scientific ML'],
-        links: {
-          github: 'https://github.com/emptymalei',
-          twitter: '',
-          website: '',
-        },
-        avatar: '👨‍💻',
-      },
-      {
         name: 'Graeme Davidson',
         title: 'Data Scientist & ML Engineer',
         bio: `Graeme Davidson is an experienced data scientist and machine learning engineer who specialises in time series forecasting for industry applications. With a background spanning finance, energy, and manufacturing, Graeme brings practical insights into building robust, production-ready forecasting systems using modern deep learning techniques.`,
@@ -126,6 +114,18 @@ export const en = {
           website: '',
         },
         avatar: '👨‍🔬',
+      },
+      {
+        name: 'Lei Ma',
+        title: 'Machine Learning Researcher & Author',
+        bio: `Lei Ma is a machine learning researcher and educator with expertise in deep learning, time series analysis, and scientific computing. He has contributed to open-source projects and research in neural networks applied to physical and temporal data. Lei is passionate about making advanced machine learning concepts accessible through clear explanations and practical examples.`,
+        expertise: ['Deep Learning', 'Time Series Analysis', 'Neural ODEs', 'PyTorch', 'Scientific ML'],
+        links: {
+          github: 'https://github.com/emptymalei',
+          twitter: '',
+          website: '',
+        },
+        avatar: '👨‍💻',
       },
     ],
   },

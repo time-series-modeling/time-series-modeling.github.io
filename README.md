@@ -1,6 +1,6 @@
 # Time Series with PyTorch — Book Landing Page
 
-A professional landing page for the book *Time Series with PyTorch* by Lei Ma and Graeme Davidson.
+A professional landing page for the book *Time Series with PyTorch* by Graeme Davidson and Lei Ma.
 
 ## Stack
 
@@ -13,7 +13,7 @@ A professional landing page for the book *Time Series with PyTorch* by Lei Ma an
 | Route | Description |
 |-------|-------------|
 | `/` | Home — hero, book introduction, purchase links, author teasers, feedback CTA |
-| `/authors` | Full author bios for Lei Ma and Graeme Davidson |
+| `/authors` | Full author bios for Graeme Davidson and Lei Ma |
 | `/erratum` | Dedicated erratum page with correction table |
 | `/feedback` | Feedback channels (GitHub issues, discussions, email) and social links |
 | `/zh/` | Chinese home |

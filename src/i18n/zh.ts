@@ -106,18 +106,6 @@ export const zh: Translations = {
     learnMoreAbout: '了解更多关于作者',
     list: [
       {
-        name: '马磊（Lei Ma）',
-        title: '机器学习研究员 & 作者',
-        bio: '马磊是一位专注于深度学习、时间序列分析和科学计算的机器学习研究员和教育者。他为神经网络在物理和时序数据中应用的开源项目和研究做出了贡献。马磊热衷于通过清晰的解释和实际示例，让高级机器学习概念变得易于理解。',
-        expertise: ['深度学习', '时间序列分析', '神经 ODE', 'PyTorch', '科学机器学习'],
-        links: {
-          github: 'https://github.com/emptymalei',
-          twitter: '',
-          website: '',
-        },
-        avatar: '👨‍💻',
-      },
-      {
         name: 'Graeme Davidson',
         title: '数据科学家 & 机器学习工程师',
         bio: 'Graeme Davidson 是一位经验丰富的数据科学家和机器学习工程师，专注于行业应用中的时间序列预测。凭借横跨金融、能源和制造业的背景，Graeme 为使用现代深度学习技术构建稳健、生产就绪的预测系统带来了实践洞见。',
@@ -128,6 +116,18 @@ export const zh: Translations = {
           website: '',
         },
         avatar: '👨‍🔬',
+      },
+      {
+        name: '马磊（Lei Ma）',
+        title: '机器学习研究员 & 作者',
+        bio: '马磊是一位专注于深度学习、时间序列分析和科学计算的机器学习研究员和教育者。他为神经网络在物理和时序数据中应用的开源项目和研究做出了贡献。马磊热衷于通过清晰的解释和实际示例，让高级机器学习概念变得易于理解。',
+        expertise: ['深度学习', '时间序列分析', '神经 ODE', 'PyTorch', '科学机器学习'],
+        links: {
+          github: 'https://github.com/emptymalei',
+          twitter: '',
+          website: '',
+        },
+        avatar: '👨‍💻',
       },
     ],
   },
