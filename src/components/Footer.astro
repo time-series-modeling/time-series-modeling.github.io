@@ -1,0 +1,106 @@
+---
+import type { Translations, SupportedLocale } from '../i18n';
+import { localePath } from '../i18n';
+
+interface Props {
+  t: Translations;
+  locale: SupportedLocale;
+}
+
+const { t, locale } = Astro.props;
+
+const navLinks = [
+  { key: 'home', path: '/' },
+  { key: 'authors', path: '/authors' },
+  { key: 'erratum', path: '/erratum' },
+  { key: 'feedback', path: '/feedback' },
+] as const;
+---
+
+<footer class="border-t border-slate-200 bg-slate-900 text-slate-300">
+  <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-2 text-lg font-bold text-white">
+          <span class="text-2xl">📈</span>
+          <span>{t.siteTitle}</span>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-slate-400">
+          {t.siteDescription}
+        </p>
+      </div>
+
+      <!-- Navigation -->
+      <div>
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          {t.footer.navigation}
+        </h3>
+        <ul class="space-y-2">
+          {
+            navLinks.map(({ key, path }) => (
+              <li>
+                <a
+                  href={localePath(locale, path)}
+                  class="text-sm text-slate-400 transition-colors hover:text-white"
+                >
+                  {t.nav[key]}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- Social -->
+      <div>
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          {t.feedback.social.title}
+        </h3>
+        <ul class="space-y-2">
+          {
+            t.feedback.social.links.map((link) => (
+              <li>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+                >
+                  <span>{link.icon}</span>
+                  <span>{link.name}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-10 border-t border-slate-800 pt-6 text-center">
+      <p class="text-xs text-slate-500">
+        {t.footer.rights}
+        {' '}
+        {t.footer.builtWith}
+        {' '}
+        <a
+          href="https://astro.build"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-400 hover:text-primary-300"
+        >
+          Astro
+        </a>
+        {' & '}
+        <a
+          href="https://tailwindcss.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-400 hover:text-primary-300"
+        >
+          Tailwind CSS
+        </a>.
+      </p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,96 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getTranslations } from '../i18n';
+
+const t = getTranslations('en');
+const locale = 'en' as const;
+const entries = t.erratum.entries;
+---
+
+<Layout t={t} locale={locale} title={t.erratum.sectionTitle} currentPath="/erratum">
+  <div class="py-16">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="text-center">
+        <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+          {t.erratum.sectionTitle}
+        </h1>
+        <p class="mt-4 text-lg text-slate-500">{t.erratum.sectionSubtitle}</p>
+      </div>
+
+      <!-- Intro -->
+      <div class="mt-10 rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <div class="flex gap-3">
+          <span class="mt-0.5 text-xl">📋</span>
+          <p class="text-sm leading-relaxed text-amber-800">
+            {t.erratum.intro}
+          </p>
+        </div>
+      </div>
+
+      <!-- Erratum table or empty state -->
+      <div class="mt-10">
+        {
+          entries.length === 0 ? (
+            <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 py-20 text-center">
+              <span class="text-5xl">✅</span>
+              <p class="mt-4 text-lg font-semibold text-slate-700">{t.erratum.noErrors}</p>
+              <p class="mt-2 text-sm text-slate-500">
+                {t.erratum.submitNote}
+                <a href="/feedback" class="text-primary-600 hover:underline">
+                  {t.erratum.submitLink}
+                </a>{t.erratum.submitSuffix}
+              </p>
+            </div>
+          ) : (
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.edition}</th>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.page}</th>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.location}</th>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.error}</th>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.correction}</th>
+                    <th class="px-4 py-3 text-left">{t.erratum.table.reported}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  {entries.map((entry) => (
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-4 py-3 font-medium">{entry.edition}</td>
+                      <td class="px-4 py-3">{entry.page}</td>
+                      <td class="px-4 py-3 text-slate-600">{entry.location}</td>
+                      <td class="px-4 py-3">
+                        <span class="rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">
+                          {entry.error}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-700">
+                          {entry.correction}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-slate-400">{entry.reported}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Submit button -->
+      <div class="mt-10 text-center">
+        <a
+          href="/feedback"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700"
+        >
+          <span>🐛</span>
+          {t.erratum.submitNote}{t.erratum.submitLink}
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
