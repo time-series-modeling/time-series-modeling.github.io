@@ -106,7 +106,7 @@ export const en = {
       {
         name: 'Graeme Davidson',
         title: 'Data Scientist & ML Engineer',
-        bio: `Graeme Davidson is an experienced data scientist and machine learning engineer who specialises in time series forecasting for industry applications. With a background spanning finance, energy, and manufacturing, Graeme brings practical insights into building robust, production-ready forecasting systems using modern deep learning techniques.`,
+        bio: `Graeme Davidson is a Lead Data Scientist at Retail Express, where he redesigned the company's demand forecasting framework in line with contemporary statistical learning practices. His background spans cognitive neuroscience, researching implicit reward processing and human decision-making, through advertising analytics to research-focused demand forecasting. He is an active contributor to several data science Slack and Discord communities, an occasional competitor in forecasting competitions, and was approached by Packt in late 2022 to write the book he wished had existed when he first fell down an ARIMA rabbit hole chasing answers about how supermarkets actually forecast demand, and how a quantitative researcher models financial markets.`,
         expertise: ['Time Series Forecasting', 'Production ML', 'Data Engineering', 'PyTorch', 'Statistical Modeling'],
         links: {
           github: '',
@@ -118,7 +118,7 @@ export const en = {
       {
         name: 'Lei Ma',
         title: 'Machine Learning Researcher & Author',
-        bio: `Lei Ma is a machine learning researcher and educator with expertise in deep learning, time series analysis, and scientific computing. He has contributed to open-source projects and research in neural networks applied to physical and temporal data. Lei is passionate about making advanced machine learning concepts accessible through clear explanations and practical examples.`,
+        bio: `Lei Ma is a physicist-turned data scientist specializing in time series forecasting. He is a theorist but has tackled real-world forecasting challenges across a variety of industries like housing, logistics, ecommerce, and manufacturing. Lei has led and delivered numerous forecasting projects where he combines deep expertise in building advanced time series models with a strategic approach to delivering holistic business insights. Lei creates time series forecasting tutorials online and joined the venture when Graeme approached him to collaborate on this book. He would like to thank Graeme Davidson for this exciting and fun collaboration as well.`,
         expertise: ['Deep Learning', 'Time Series Analysis', 'Neural ODEs', 'PyTorch', 'Scientific ML'],
         links: {
           github: 'https://github.com/emptymalei',
