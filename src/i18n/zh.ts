@@ -84,7 +84,12 @@ export const zh: Translations = {
         summary:
           '理解时间序列数据的本质、其内在挑战，以及在动手建模前如何构建可靠的评估体系。',
         chapters: ['第1章 · 时间序列入门', '第2章 · 时间序列的挑战', '第3章 · 评估时间序列模型'],
-        outcomes: ['建立对时间序列结构与陷阱的直觉认知', '在第一个模型之前就搭好可信的评估流程'],
+        outcomes: [
+          '建立对时间结构、模式与时序数据独特陷阱的直觉认知',
+          '理解分解、平稳性与多元预测的挑战',
+          '在建立第一个模型前就构建可靠的训验划分与交叉验证方案',
+          '针对具体问题选择并解读合适的评估指标（MAE、RMSE、MASE、分组指标）',
+        ],
       },
       {
         phase: '阶段 2',
@@ -92,7 +97,12 @@ export const zh: Translations = {
         summary:
           '从零学 PyTorch，构建并训练神经网络，深入理解支撑它们运作的优化机制。',
         chapters: ['第4章 · PyTorch 基础', '第5章 · 简单神经架构', '第6章 · 优化'],
-        outcomes: ['在 PyTorch 中从零实现、训练并调试神经网络', '掌握损失函数、激活函数与梯度下降的原理'],
+        outcomes: [
+          '流畅使用 PyTorch 张量、计算图与自动微分',
+          '从零实现、训练并调试基于 PyTorch 模块的神经网络',
+          '理解激活函数、损失函数与正则化技术',
+          '应用梯度下降及其变体有效优化网络参数',
+        ],
       },
       {
         phase: '阶段 3',
@@ -100,7 +110,13 @@ export const zh: Translations = {
         summary:
           '系统掌握主流神经预测架构，并将 Conformal 预测作为与模型无关的方法，为任意预测器生成经过校准的不确定性区间。',
         chapters: ['第7章 · Conformal 预测', '第8章 · 循环神经网络', '第9章 · Transformer', '第10章 · 其他神经结构'],
-        outcomes: ['将 RNN、Transformer、GNN、KAN 及基础模型用于预测任务', '用 Conformal 预测生成可靠的预测区间'],
+        outcomes: [
+          '使用 Conformal 预测生成与分布无关的可靠预测区间',
+          '用 RNN、LSTM、GRU 建模序列依赖关系',
+          '实现并应用 Transformer 架构进行时序预测',
+          '探索 MLP、图神经网络、KAN 与基础模型等备选方案',
+          '根据数据结构与任务需求选择合适的架构类型',
+        ],
       },
       {
         phase: '阶段 4',
@@ -116,7 +132,13 @@ export const zh: Translations = {
         summary:
           '将完整工具箱应用于分类、聚类、异常检测、嵌入表示与自监督表示学习。',
         chapters: ['第14章 · 时间序列分类', '第15章 · 时间序列聚类', '第16章 · 时序嵌入', '第17章 · 异常检测', '第18章 · 自监督学习'],
-        outcomes: ['解决点预测以外的多样时序任务', '为大规模应用构建紧凑、可复用的序列表示'],
+        outcomes: [
+          '使用基于距离、基于特征与深度学习的方法对时间序列进行分类',
+          '结合 TSCL 流程对时间序列进行聚类，并评估聚类质量',
+          '学习并应用能捕捉时序动态特征的嵌入表示，支撑下游任务',
+          '用监督与无监督方法检测异常，涵盖隔离森林、自适应阈值到“预测优先”异常检测等多种方法',
+          '将自监督学习（对比预测编码）应用于构建无需标签的强大序列表示',
+        ],
       },
     ],
   },
@@ -166,6 +188,14 @@ export const zh: Translations = {
         cta: '访问',
         primary: false,
       },
+      {
+        name: '代码仓库',
+        description: 'Packt 官方配套代码仓库',
+        icon: '💻',
+        url: 'https://github.com/PacktPublishing/Time-Series-with-PyTorch',
+        cta: '查看代码',
+        primary: false,
+      },
     ],
   },
 
@@ -183,7 +213,6 @@ export const zh: Translations = {
         expertise: ['时间序列预测', '生产级机器学习', '数据工程', 'PyTorch', '统计建模'],
         links: {
           github: '',
-          twitter: '',
           website: '',
         },
         avatar: '👨‍🔬',
@@ -195,7 +224,6 @@ export const zh: Translations = {
         expertise: ['深度学习', '时间序列分析', '神经 ODE', 'PyTorch', '科学机器学习'],
         links: {
           github: 'https://github.com/emptymalei',
-          twitter: '',
           website: '',
         },
         avatar: '👨‍💻',
@@ -232,32 +260,36 @@ export const zh: Translations = {
       '有问题、发现错误或想分享您对本书的体验？请通过以下任一渠道与我们联系。',
     channels: [
       {
-        icon: '🐛',
-        title: '报告错误',
-        desc: '在书中发现错误？请提交 GitHub Issue，以便我们跟踪和更正。',
-        linkText: '提交 GitHub Issue',
-        url: 'https://github.com/time-series-modeling/time-series-modeling.github.io/issues/new',
-      },
-      {
         icon: '💬',
         title: '综合讨论',
         desc: '关于书中内容的问题、想法或综合讨论。',
-        linkText: 'GitHub 讨论区',
-        url: 'https://github.com/time-series-modeling/time-series-modeling.github.io/discussions',
+        links: [
+          { name: 'GitHub 讨论区', url: 'https://github.com/orgs/time-series-modeling/discussions' },
+        ],
       },
       {
-        icon: '📧',
-        title: '发邮件给作者',
-        desc: '如有私密咨询，您可以直接联系作者。',
-        linkText: '联系我们',
-        url: 'mailto:contact@example.com',
+        icon: '🐙',
+        title: '作者 GitHub 主页',
+        desc: '可通过 GitHub 直接与作者联系。',
+        links: [
+          { name: 'Graeme (AugustComte)', url: 'https://github.com/AugustComte' },
+          { name: 'Lei (emptymalei)', url: 'https://github.com/emptymalei' },
+        ],
+      },
+      {
+        icon: '💼',
+        title: '作者 LinkedIn 主页',
+        desc: '可通过 LinkedIn 与作者建立联系。',
+        links: [
+          { name: 'Graeme Davidson', url: 'https://linkedin.com/in/graeme-r-davidson' },
+          { name: 'Lei Ma', url: 'https://linkedin.com/in/leima137' },
+        ],
       },
     ],
     social: {
       title: '关注我们',
       links: [
         { name: 'GitHub', icon: '⚡', url: 'https://github.com/time-series-modeling' },
-        { name: 'Twitter / X', icon: '🐦', url: '#' },
       ],
     },
   },

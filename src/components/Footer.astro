@@ -1,6 +1,7 @@
 ---
 import type { Translations, SupportedLocale } from '../i18n';
 import { localePath } from '../i18n';
+import BrandMark from './BrandMark.astro';
 
 interface Props {
   t: Translations;
@@ -23,7 +24,7 @@ const navLinks = [
       <!-- Brand -->
       <div>
         <div class="flex items-center gap-2 text-lg font-bold text-white">
-          <span class="text-2xl">📈</span>
+          <BrandMark class="h-7 w-7" />
           <span>{t.siteTitle}</span>
         </div>
         <p class="mt-3 text-sm leading-relaxed text-slate-400">

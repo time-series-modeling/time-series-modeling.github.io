@@ -82,7 +82,12 @@ export const en = {
         summary:
           'Understand what time-series data is, the challenges it presents, and how to evaluate models reliably before building anything.',
         chapters: ['1 · Time Series for Everyone', '2 · The Challenge of Time Series', '3 · Evaluating Time-Series Models'],
-        outcomes: ['Build grounded intuition about time-series structure and pitfalls', 'Set up trustworthy evaluation workflows before the first model'],
+        outcomes: [
+          'Build grounded intuition about temporal structure, patterns, and the unique pitfalls of time-series data',
+          'Understand decomposition, stationarity, and multivariate forecasting challenges',
+          'Set up trustworthy train/validation splits and cross-validation schemes before the first model',
+          'Choose and interpret error metrics (MAE, RMSE, MASE, grouped metrics) appropriate to each problem',
+        ],
       },
       {
         phase: 'Stage 2',
@@ -90,7 +95,12 @@ export const en = {
         summary:
           'Learn PyTorch from scratch, build and train neural networks, and develop deep understanding of the optimization mechanics behind them.',
         chapters: ['4 · PyTorch Fundamentals', '5 · Simple Neural Architecture', '6 · Optimization'],
-        outcomes: ['Implement, train, and debug neural networks in PyTorch', 'Reason about loss functions, activation functions, and gradient descent'],
+        outcomes: [
+          'Work fluently with PyTorch tensors, computational graphs, and autograd',
+          'Implement, train, and debug neural networks from scratch using PyTorch modules',
+          'Understand activation functions, loss functions, and regularization techniques',
+          'Apply gradient descent and its variants to optimize network parameters effectively',
+        ],
       },
       {
         phase: 'Stage 3',
@@ -98,7 +108,13 @@ export const en = {
         summary:
           'Progress through the major neural forecasting architectures and learn conformal prediction as a model-agnostic method for producing calibrated uncertainty estimates.',
         chapters: ['7 · Conformal Prediction', '8 · Recurrent Neural Networks', '9 · Transformers', '10 · Other Neural Structures'],
-        outcomes: ['Apply RNNs, Transformers, GNNs, KANs, and foundation models to forecasting', 'Produce reliable prediction intervals with conformal prediction'],
+        outcomes: [
+          'Produce reliable, distribution-free prediction intervals with conformal prediction',
+          'Model sequential dependencies with RNNs, LSTMs, and GRUs',
+          'Implement and apply the Transformer architecture for time-series forecasting',
+          'Explore MLP, graph neural network, KAN, and foundation model alternatives',
+          'Select the right architectural family based on data structure and task requirements',
+        ],
       },
       {
         phase: 'Stage 4',
@@ -114,7 +130,13 @@ export const en = {
         summary:
           'Apply the full toolkit to classification, clustering, anomaly detection, embeddings, and self-supervised representation learning.',
         chapters: ['14 · Time Series Classification', '15 · Time Series Clustering', '16 · Embeddings for Time Series', '17 · Anomaly Detection', '18 · Self-Supervised Learning'],
-        outcomes: ['Solve diverse time-series tasks beyond point prediction', 'Build compact, reusable representations for large-scale applications'],
+        outcomes: [
+          'Classify time series using distance-based, feature-based, and deep learning approaches',
+          'Cluster time series with the TSCL pipeline and evaluate cluster quality',
+          'Learn and apply embeddings that capture temporal dynamics for downstream tasks',
+          'Detect anomalies with both supervised and unsupervised methods, from isolation forests to forecast-first detection',
+          'Apply self-supervised learning (contrastive predictive coding) to build powerful representations without labels',
+        ],
       },
     ],
   },
@@ -164,6 +186,14 @@ export const en = {
         cta: 'Access',
         primary: false,
       },
+      {
+        name: 'Codebase',
+        description: 'Official Packt companion repository',
+        icon: '💻',
+        url: 'https://github.com/PacktPublishing/Time-Series-with-PyTorch',
+        cta: 'View Code',
+        primary: false,
+      },
     ],
   },
 
@@ -181,7 +211,6 @@ export const en = {
         expertise: ['Time Series Forecasting', 'Production ML', 'Data Engineering', 'PyTorch', 'Statistical Modeling'],
         links: {
           github: '',
-          twitter: '',
           website: '',
         },
         avatar: '👨‍🔬',
@@ -193,7 +222,6 @@ export const en = {
         expertise: ['Deep Learning', 'Time Series Analysis', 'Neural ODEs', 'PyTorch', 'Scientific ML'],
         links: {
           github: 'https://github.com/emptymalei',
-          twitter: '',
           website: '',
         },
         avatar: '👨‍💻',
@@ -248,32 +276,36 @@ export const en = {
       'Have a question, found an error, or want to share your experience with the book? Reach out to us through any of the channels below.',
     channels: [
       {
-        icon: '🐛',
-        title: 'Report an Error',
-        desc: 'Found a mistake in the book? Please open a GitHub issue so we can track and correct it.',
-        linkText: 'Open GitHub Issue',
-        url: 'https://github.com/time-series-modeling/time-series-modeling.github.io/issues/new',
-      },
-      {
         icon: '💬',
         title: 'General Discussion',
         desc: 'Questions, ideas, or general discussion about the book content.',
-        linkText: 'GitHub Discussions',
-        url: 'https://github.com/time-series-modeling/time-series-modeling.github.io/discussions',
+        links: [
+          { name: 'GitHub Discussions', url: 'https://github.com/orgs/time-series-modeling/discussions' },
+        ],
       },
       {
-        icon: '📧',
-        title: 'Email the Authors',
-        desc: 'For private inquiries, you can reach the authors directly.',
-        linkText: 'Contact Us',
-        url: 'mailto:contact@example.com',
+        icon: '🐙',
+        title: 'Author GitHub Profiles',
+        desc: 'Connect with the authors directly on GitHub.',
+        links: [
+          { name: 'Graeme (AugustComte)', url: 'https://github.com/AugustComte' },
+          { name: 'Lei (emptymalei)', url: 'https://github.com/emptymalei' },
+        ],
+      },
+      {
+        icon: '💼',
+        title: 'Author LinkedIn Profiles',
+        desc: 'Connect with the authors on LinkedIn.',
+        links: [
+          { name: 'Graeme Davidson', url: 'https://linkedin.com/in/graeme-r-davidson' },
+          { name: 'Lei Ma', url: 'https://linkedin.com/in/leima137' },
+        ],
       },
     ],
     social: {
       title: 'Follow Us',
       links: [
         { name: 'GitHub', icon: '⚡', url: 'https://github.com/time-series-modeling' },
-        { name: 'Twitter / X', icon: '🐦', url: '#' },
       ],
     },
   },
