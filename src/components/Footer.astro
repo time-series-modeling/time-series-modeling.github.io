@@ -20,7 +20,7 @@ const navLinks = [
 
 <footer class="border-t border-slate-200 bg-slate-900 text-slate-300">
   <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
       <!-- Brand -->
       <div>
         <div class="flex items-center gap-2 text-lg font-bold text-white">
@@ -53,29 +53,6 @@ const navLinks = [
         </ul>
       </div>
 
-      <!-- Social -->
-      <div>
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-          {t.feedback.social.title}
-        </h3>
-        <ul class="space-y-2">
-          {
-            t.feedback.social.links.map((link) => (
-              <li>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
-                >
-                  <span>{link.icon}</span>
-                  <span>{link.name}</span>
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div>
     </div>
 
     <div class="mt-10 border-t border-slate-800 pt-6 text-center">

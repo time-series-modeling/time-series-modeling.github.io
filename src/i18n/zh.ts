@@ -208,22 +208,24 @@ export const zh: Translations = {
     list: [
       {
         name: 'Graeme Davidson',
-        title: '数据科学家 & 机器学习工程师',
+        title: 'Retail Express 首席数据科学家',
         bio: 'Graeme Davidson 是 Retail Express 的首席数据科学家，在那里他依据当代统计学习实践重新设计了公司的需求预测框架。他的经历横跨认知神经科学（研究内隐奖赏加工与人类决策）、广告分析，以及以研究为导向的需求预测。他活跃于多个数据科学 Slack 和 Discord 社区，偶尔参加预测竞赛。Packt 于 2022 年底联系他撰写这本书，这正是他当年一头扎进 ARIMA 的“兔子洞”时希望就存在的书，当时他在追寻超市究竟如何进行需求预测，以及量化研究者如何建模金融市场的答案。',
         expertise: ['时间序列预测', '生产级机器学习', '数据工程', 'PyTorch', '统计建模'],
         links: {
-          github: '',
+          github: 'https://github.com/AugustComte',
+          linkedin: 'https://linkedin.com/in/graeme-r-davidson',
           website: '',
         },
         avatar: '👨‍🔬',
       },
       {
         name: '马磊（Lei Ma）',
-        title: '机器学习研究员 & 作者',
+        title: '由物理学家转型的时间序列数据科学家',
         bio: '马磊（Lei Ma）是一位由物理学家转型的数据科学家，专注于时间序列预测。他偏重理论研究，但也在住房、物流、电商和制造等多个行业应对过真实世界的预测挑战。马磊主导并交付了众多预测项目，将构建先进时间序列模型的深厚能力与面向业务全局洞察的战略方法相结合。他在线创作时间序列预测教程，并在 Graeme 邀请下加入本书合作。',
         expertise: ['深度学习', '时间序列分析', '神经 ODE', 'PyTorch', '科学机器学习'],
         links: {
           github: 'https://github.com/emptymalei',
+          linkedin: 'https://linkedin.com/in/leima137',
           website: '',
         },
         avatar: '👨‍💻',
