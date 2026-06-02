@@ -314,7 +314,7 @@ export const en = {
 
   // Footer
   footer: {
-    rights: '© 2025 Lei Ma & Graeme Davidson. All rights reserved.',
+    rights: '© 2026 Lei Ma & Graeme Davidson. All rights reserved.',
     builtWith: 'Built with',
     navigation: 'Navigation',
   },
