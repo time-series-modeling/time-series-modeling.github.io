@@ -67,6 +67,58 @@ export const en = {
     ],
   },
 
+  // Content map
+  roadmap: {
+    badge: 'Roadmap',
+    sectionTitle: 'Visual Content Map',
+    sectionSubtitle: 'See what you will learn without reading a long table of contents',
+    intro:
+      'The book is organized as a practical progression: foundations, forecasting architectures, advanced generalization techniques, and beyond-forecasting applications.',
+    outcomesLabel: 'What you gain',
+    stages: [
+      {
+        phase: 'Stage 1',
+        title: 'Time Series Foundations',
+        summary:
+          'Understand what time-series data is, the challenges it presents, and how to evaluate models reliably before building anything.',
+        chapters: ['1 · Time Series for Everyone', '2 · The Challenge of Time Series', '3 · Evaluating Time-Series Models'],
+        outcomes: ['Build grounded intuition about time-series structure and pitfalls', 'Set up trustworthy evaluation workflows before the first model'],
+      },
+      {
+        phase: 'Stage 2',
+        title: 'PyTorch and Neural Fundamentals',
+        summary:
+          'Learn PyTorch from scratch, build and train neural networks, and develop deep understanding of the optimization mechanics behind them.',
+        chapters: ['4 · PyTorch Fundamentals', '5 · Simple Neural Architecture', '6 · Optimization'],
+        outcomes: ['Implement, train, and debug neural networks in PyTorch', 'Reason about loss functions, activation functions, and gradient descent'],
+      },
+      {
+        phase: 'Stage 3',
+        title: 'Conformal Prediction and Neural Forecasting Architectures',
+        summary:
+          'Progress through the major neural forecasting architectures and learn conformal prediction as a model-agnostic method for producing calibrated uncertainty estimates.',
+        chapters: ['7 · Conformal Prediction', '8 · Recurrent Neural Networks', '9 · Transformers', '10 · Other Neural Structures'],
+        outcomes: ['Apply RNNs, Transformers, GNNs, KANs, and foundation models to forecasting', 'Produce reliable prediction intervals with conformal prediction'],
+      },
+      {
+        phase: 'Stage 4',
+        title: 'Global Models, Synthetic Data and Probabilistic Forecasting',
+        summary:
+          'Go beyond single-series modeling — train across collections of series, generate synthetic data with VAEs, and produce full forecast distributions with diffusion models.',
+        chapters: ['11 · Transfer Learning and Global Modelling', '12 · Synthetic Time Series Data', '13 · Diffusion Models'],
+        outcomes: ['Build global forecasting models that generalize across many related series', 'Generate realistic synthetic time-series data for augmentation and testing', 'Apply diffusion models as a probabilistic forecasting method to produce full forecast distributions'],
+      },
+      {
+        phase: 'Stage 5',
+        title: 'Beyond Forecasting',
+        summary:
+          'Apply the full toolkit to classification, clustering, anomaly detection, embeddings, and self-supervised representation learning.',
+        chapters: ['14 · Time Series Classification', '15 · Time Series Clustering', '16 · Embeddings for Time Series', '17 · Anomaly Detection', '18 · Self-Supervised Learning'],
+        outcomes: ['Solve diverse time-series tasks beyond point prediction', 'Build compact, reusable representations for large-scale applications'],
+      },
+    ],
+  },
+
   // Purchase
   purchase: {
     sectionTitle: 'Get Your Copy',
