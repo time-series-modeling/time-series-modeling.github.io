@@ -320,12 +320,16 @@ export const en = {
     subtitle:
       'Neural networks, foundation models and advanced topics for retail demand forecasting. Packt forecasting bootcamp, 28–29 November 2026.',
     intro:
-      'Short animations and an interactive field guide that go with the Day 2 labs. All numbers come from the reference run of the workshop notebooks (2,000 series).',
+      'Short animations and interactive figures that go with the Day 2 labs. All numbers come from the reference run of the workshop notebooks (2,000 series).',
     videosTitle: 'Animations',
-    guideTitle: 'Interactive field guide',
-    guideDesc:
-      'The data, one widget per method, and the results of every lab. Move the sliders to see each idea at work.',
-    guideOpen: 'Open the field guide in a new tab',
+    explore: 'Explore the interactive figures',
+    back: 'Back to the Day 2 overview',
+    pages: {
+      data: { title: 'Day 2 · The data', lede: "Two years of a retailer's weekly sales: 2,000 series with prices, promotions and a five-level product hierarchy. Every lab uses the same stratified sample.", card: 'Weekly totals and the train / test split, one example series per demand type with real forecasts, demand types, velocity classes and the hierarchy.' },
+      methods: { title: 'Day 2 · The methods', lede: 'One idea per widget. Move the sliders before you read the takeaway. These widgets use simulated or simplified data.', card: 'Rolling-origin evaluation, RMSSE, global training windows, NHITS stacks, quantile loss, the conformal coverage cap, reconciliation, Elo ratings and ensembles.' },
+      results: { title: 'Day 2 · The results', lede: 'Reference-run numbers from the workshop notebooks (2,000 series). Mean RMSSE unless noted; lower is better. Differences below about 0.01 are within seed noise.', card: 'The final leaderboard, the day as a journey, and one chart per lab: training cost, tuning, promotions, reconciliation, interval coverage and model selection.' },
+    },
+    footnote: 'Reference run, 15 November 2026: neuralforecast 3.2.2, mlforecast 1.1.0, statsforecast 2.1.1, hierarchicalforecast 1.5.3. Lab 04 (foundation models) is not included yet.',
     videos: [
       { file: '01_dataset_tour.mp4', title: 'The dataset', desc: 'Two years of weekly sales for 2,000 series, the train / validation / test split, and one series of each demand type.' },
       { file: '03_nhits_stacks.mp4', title: 'NHITS, stack by stack', desc: 'The first stack draws the slow shape with a few points; later stacks add finer detail until the stacks sum to the series.' },

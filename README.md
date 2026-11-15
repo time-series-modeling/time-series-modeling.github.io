@@ -16,6 +16,8 @@ A professional landing page for the book *Time Series with PyTorch* by Graeme Da
 | `/authors` | Full author bios for Graeme Davidson and Lei Ma |
 | `/erratum` | Dedicated erratum page with correction table |
 | `/feedback` | Feedback channels (GitHub issues, discussions, email) and social links |
+| `/workshops/day2` | Day 2 workshop hub: four looping explainer videos and links to the interactive pages |
+| `/workshops/day2/data`, `/methods`, `/results` | Interactive Day 2 figures (dataset, method widgets, lab results), rendered by `src/scripts/day2-widgets.js` from `src/data/day2.json` |
 | `/zh/` | Chinese home |
 | `/zh/authors` | Chinese authors page |
 | `/zh/erratum` | Chinese erratum page |

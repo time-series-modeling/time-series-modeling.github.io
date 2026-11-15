@@ -1,0 +1,74 @@
+<section class="d2 part">
+  <div class="plate">
+    <h3>Honest evaluation: rolling origin</h3>
+    <div class="ctrl"><div class="seg" id="cvToggle"><button aria-pressed="true" data-v="0">Final split</button><button aria-pressed="false" data-v="1">CV fold 1</button><button aria-pressed="false" data-v="2">CV fold 2</button></div></div>
+    <div class="fig" id="figCV"></div>
+    <p class="take">Models only ever see the past. Tuning happens on the validation window; the 14 test weeks are scored once. In Lab 01 the two CV folds scored 2.35 and 1.27: fold-to-fold differences are mostly the data, not the model, which is why we compare models on the same fold.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>RMSSE: my error ÷ the error of copying last year</h3>
+      <div class="ctrl"><label>Noise in my forecast <input type="range" id="rmNoise" min="0" max="30" value="8"></label><label>Bias <input type="range" id="rmBias" min="-20" max="20" value="0"></label></div>
+      <div class="fig" id="figRM"></div>
+      <div class="readout" id="rmOut"></div>
+      <p class="take">Below 1 beats the yardstick, above 1 loses to it. Because it is a ratio, a 20-unit item and a 20,000-unit item count the same.</p>
+    </div>
+    <div class="plate">
+      <h3>Global models learn from everyone's windows</h3>
+      <div class="ctrl"><button class="btn" id="glBtn">Draw 20 training windows</button><button class="btn" id="glReset">Reset</button></div>
+      <div class="fig" id="figGL"></div>
+      <div class="readout" id="glOut"></div>
+      <p class="take">A local model (ETS) sees about 90 weeks of one series. A global model (LightGBM, NHITS) sees windows from all 2,000 series, so a slow item can borrow patterns from similar items.</p>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>NHITS: coarse to fine, stack by stack</h3>
+    <div class="ctrl"><div class="seg" id="nhStack"><button aria-pressed="true" data-v="1">Stack 1 (pool 8)</button><button aria-pressed="false" data-v="2">+ Stack 2 (pool 4)</button><button aria-pressed="false" data-v="3">+ Stack 3 (pool 1)</button></div></div>
+    <div class="fig" id="figNH"></div>
+    <p class="cap">Illustration on the smooth example series. Each stack looks at a pooled (blurred) input and outputs a few knots that are interpolated; the next stack models what is left.</p>
+    <p class="take">The first stack draws the slow shape with a handful of points, the last fills in the weekly wiggles. Cheap, and robust on short noisy series. Lab 01: NHITS 1.193, Lab 03 with covariates on the median series 0.56.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Quantile (pinball) loss</h3>
+      <div class="ctrl"><label>Quantile τ <input type="range" id="pbTau" min="5" max="95" value="80"></label></div>
+      <div class="fig" id="figPB"></div>
+      <div class="readout" id="pbOut"></div>
+      <p class="take">Under-forecasting costs τ per unit, over-forecasting 1−τ. The forecast that minimises it is the τ-quantile of demand. NHITS_MQ learns five of these at once: the best intervals of the day.</p>
+    </div>
+    <div class="plate">
+      <h3>Why per-series conformal tops out near 75 %</h3>
+      <div class="ctrl"><label>Calibration scores per series <input type="range" id="cfN" min="1" max="40" value="3"></label><div class="seg" id="cfLvl"><button aria-pressed="true" data-v="0.8">80 %</button><button aria-pressed="false" data-v="0.95">95 %</button></div></div>
+      <div class="fig" id="figCF"></div>
+      <div class="readout" id="cfOut"></div>
+      <p class="take">Simulated with 3,000 series. With n scores the margin is the ⌈(n+1)(1−α)⌉-th largest; if that rank does not exist, the best you can do is the largest, which a new error beats 1 time in n+1. Three windows give at most 75 %. Lab 06 measured 67–68 % and 74–75 %. Pooling scores across series gives 80 % and 93 %.</p>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>Reconciliation: whom do you believe?</h3>
+    <div class="ctrl"><label>Item A forecast <input type="range" id="rcA" min="0" max="200" value="120"></label><label>Item B forecast <input type="range" id="rcB" min="0" max="200" value="60"></label><label>Total forecast <input type="range" id="rcT" min="0" max="400" value="220"></label><label>How noisy items are vs total <input type="range" id="rcW" min="1" max="20" value="4"></label></div>
+    <div class="fig" id="figRC"></div>
+    <p class="take">BottomUp trusts the items, TopDown trusts the total and splits it by the forecasts' proportions. MinTrace moves every number as little as possible, weighted by how reliable each one has been. Raise "how noisy items are" and MinTrace leans towards the total. In Lab 05 MinT-shrink was coherent and lost nothing at the items (1.251 vs 1.253).</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Elo / Bradley–Terry: from duels to a rating</h3>
+      <div class="ctrl"><label>Rating difference <input type="range" id="eloD" min="-400" max="400" value="100" step="10"></label></div>
+      <div class="fig" id="figELO"></div>
+      <div class="readout" id="eloOut"></div>
+      <p class="take">Every series is a match; lower RMSSE wins. NHITSx (1131) vs Naive (921): 210 points, so NHITSx wins about 77 % of series.</p>
+    </div>
+    <div class="plate">
+      <h3>Ensembles: mistakes that cancel</h3>
+      <div class="ctrl"><label>Correlation between the models' errors <input type="range" id="enR" min="0" max="100" value="50"></label></div>
+      <div class="fig" id="figEN"></div>
+      <div class="readout" id="enOut"></div>
+      <p class="take">Averaging three equally good models cuts the error by a factor that depends only on how alike their mistakes are. Different families (NHITS with and without covariates, LightGBM) disagree more, so their average wins: 1.25 vs 1.31 on held-out series.</p>
+    </div>
+  </div>
+</section>
