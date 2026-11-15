@@ -1,0 +1,65 @@
+---
+import type { Translations } from '../i18n';
+
+interface Props {
+  t: Translations;
+}
+
+const { t } = Astro.props;
+const w = t.workshop;
+const base = '/workshops/day2';
+---
+
+<div class="py-16">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">{w.title}</h1>
+      <p class="mt-4 text-lg text-slate-500">{w.subtitle}</p>
+      <p class="mx-auto mt-4 max-w-3xl text-base text-slate-600">{w.intro}</p>
+    </div>
+
+    <h2 class="mt-14 text-2xl font-bold text-slate-900">{w.videosTitle}</h2>
+    <div class="mt-6 grid gap-8 md:grid-cols-2">
+      {
+        w.videos.map((v) => (
+          <figure class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <video
+              class="aspect-video w-full bg-slate-100"
+              src={`${base}/videos/${v.file}`}
+              autoplay
+              muted
+              loop
+              playsinline
+              controls
+              preload="metadata"
+              aria-label={v.title}
+            />
+            <figcaption class="p-4">
+              <p class="font-semibold text-slate-900">{v.title}</p>
+              <p class="mt-1 text-sm text-slate-500">{v.desc}</p>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+
+    <h2 class="mt-16 text-2xl font-bold text-slate-900">{w.guideTitle}</h2>
+    <p class="mt-2 text-slate-600">{w.guideDesc}</p>
+    <a
+      href={`${base}/field-guide.html`}
+      target="_blank"
+      rel="noopener"
+      class="mt-4 inline-block rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+    >
+      {w.guideOpen}
+    </a>
+    <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+      <iframe
+        src={`${base}/field-guide.html`}
+        title={w.guideTitle}
+        class="h-[80vh] w-full"
+        loading="lazy"
+      ></iframe>
+    </div>
+  </div>
+</div>

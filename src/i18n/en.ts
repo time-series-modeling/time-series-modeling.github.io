@@ -12,6 +12,7 @@ export const en = {
     authors: 'Authors',
     erratum: 'Erratum',
     feedback: 'Feedback',
+    workshop: 'Workshop',
   },
 
   // Hero / Book intro
@@ -310,6 +311,27 @@ export const en = {
         { name: 'GitHub', icon: '⚡', url: 'https://github.com/time-series-modeling' },
       ],
     },
+  },
+
+  // Workshops
+  workshop: {
+    navTitle: 'Workshop',
+    title: 'Day 2 workshop: visual companion',
+    subtitle:
+      'Neural networks, foundation models and advanced topics for retail demand forecasting. Packt forecasting bootcamp, 28–29 November 2026.',
+    intro:
+      'Short animations and an interactive field guide that go with the Day 2 labs. All numbers come from the reference run of the workshop notebooks (2,000 series).',
+    videosTitle: 'Animations',
+    guideTitle: 'Interactive field guide',
+    guideDesc:
+      'The data, one widget per method, and the results of every lab. Move the sliders to see each idea at work.',
+    guideOpen: 'Open the field guide in a new tab',
+    videos: [
+      { file: '01_dataset_tour.mp4', title: 'The dataset', desc: 'Two years of weekly sales for 2,000 series, the train / validation / test split, and one series of each demand type.' },
+      { file: '03_nhits_stacks.mp4', title: 'NHITS, stack by stack', desc: 'The first stack draws the slow shape with a few points; later stacks add finer detail until the stacks sum to the series.' },
+      { file: '02_conformal_cap.mp4', title: 'Why per-series conformal tops out near 75 %', desc: 'With only three calibration errors per series, no margin can promise 80 %. More scores, or pooling them across series, fixes it.' },
+      { file: '04_reconciliation.mp4', title: 'Reconciliation', desc: 'Item and total forecasts that disagree, made to add up three ways: BottomUp, TopDown and MinTrace.' },
+    ],
   },
 
   // Footer

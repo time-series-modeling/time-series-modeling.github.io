@@ -13,6 +13,7 @@ export const zh: Translations = {
     authors: '作者',
     erratum: '勘误',
     feedback: '反馈',
+    workshop: '工作坊',
   },
 
   // Hero / Book intro
@@ -294,6 +295,27 @@ export const zh: Translations = {
         { name: 'GitHub', icon: '⚡', url: 'https://github.com/time-series-modeling' },
       ],
     },
+  },
+
+  // 工作坊
+  workshop: {
+    navTitle: '工作坊',
+    title: '第二天工作坊：可视化讲解',
+    subtitle:
+      '零售需求预测中的神经网络、基础模型与进阶主题。Packt 预测训练营，2026 年 11 月 28–29 日。',
+    intro:
+      '配合第二天实验的短动画与交互式图解指南。所有数字均来自工作坊笔记本的参考运行（2,000 条序列）。',
+    videosTitle: '动画',
+    guideTitle: '交互式图解指南',
+    guideDesc:
+      '数据概览、每种方法一个交互组件，以及每个实验的结果。拖动滑块即可看到每个概念如何运作。',
+    guideOpen: '在新标签页中打开图解指南',
+    videos: [
+      { file: '01_dataset_tour.mp4', title: '数据集', desc: '2,000 条序列两年的周销量、训练 / 验证 / 测试划分，以及每种需求类型的一条示例序列。' },
+      { file: '03_nhits_stacks.mp4', title: 'NHITS：逐层叠加', desc: '第一层用少量点勾勒缓慢变化的形状，后续各层逐步补充细节，直到各层之和等于原序列。' },
+      { file: '02_conformal_cap.mp4', title: '为什么逐序列共形预测的覆盖率上限约为 75 %', desc: '每条序列只有三个校准误差时，任何区间都无法保证 80 % 覆盖。增加校准分数或跨序列汇总即可解决。' },
+      { file: '04_reconciliation.mp4', title: '层级协调', desc: '商品与总量预测不一致时，用三种方式使其相加一致：BottomUp、TopDown 与 MinTrace。' },
+    ],
   },
 
   // Footer
