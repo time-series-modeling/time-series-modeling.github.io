@@ -1,0 +1,40 @@
+/* Day 2 workshop widgets. Scoped under .d2; colours follow the site palette (slate + primary blue). */
+.d2 {
+  --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --grid: #f1f5f9; --panel: #ffffff; --soft: #eff6ff;
+  --a1: #2563eb; --a2: #ea580c; --a3: #059669; --a4: #7c3aed; --a5: #d97706; --warn: #dc2626;
+  --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--ink);
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+.d2 h3 { font-size: 1.125rem; font-weight: 700; color: var(--ink); }
+.d2 p { max-width: 70ch; }
+.d2 .plate { background: var(--panel); border: 1px solid var(--line); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; box-shadow: 0 1px 2px rgb(15 23 42 / 0.05); }
+.d2 .cap { color: var(--muted); font-size: 0.875rem; }
+.d2 .take { font-size: 0.9rem; color: #334155; border-left: 3px solid var(--a1); padding-left: 0.75rem; }
+.d2 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+.d2 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
+.d2 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 0.75rem; padding: 1rem; }
+.d2 .stat b { display: block; font-size: 1.75rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--a1); }
+.d2 .stat span { color: var(--muted); font-size: 0.8rem; }
+.d2 .ctrl { display: flex; flex-wrap: wrap; gap: 0.6rem 1.1rem; align-items: center; font-size: 0.875rem; color: #334155; }
+.d2 .ctrl label { display: flex; gap: 0.5rem; align-items: center; }
+.d2 .ctrl input[type=range] { width: 180px; accent-color: var(--a1); }
+.d2 .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; }
+.d2 .seg button { font: inherit; font-size: 0.8rem; border: 0; background: transparent; color: #334155; padding: 0.4rem 0.7rem; cursor: pointer; }
+.d2 .seg button:hover { background: var(--grid); }
+.d2 .seg button[aria-pressed="true"] { background: var(--a1); color: #fff; }
+.d2 .btn { font: inherit; font-size: 0.8rem; border: 1px solid var(--a1); color: var(--a1); background: transparent; padding: 0.4rem 0.75rem; border-radius: 0.5rem; cursor: pointer; }
+.d2 .btn:hover { background: var(--soft); }
+.d2 .readout { font-family: var(--f-mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; background: var(--grid); padding: 0.5rem 0.65rem; border-radius: 0.4rem; }
+.d2 .fig { width: 100%; overflow-x: auto; }
+.d2 svg { display: block; width: 100%; height: auto; }
+.d2 svg text { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.d2 svg .t-ink { fill: var(--ink); }
+.d2 svg .t-b { font-weight: 600; }
+.d2 .gl { stroke: var(--grid); stroke-width: 1; }
+.d2 .ax { stroke: var(--line); stroke-width: 1; }
+.d2 .legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; font-size: 0.8rem; color: var(--muted); }
+.d2 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.d2 .chk { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; font-size: 0.8rem; }
+.d2 code { font-family: var(--f-mono); font-size: 0.9em; background: var(--grid); padding: 1px 5px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .d2 * { transition: none !important; animation: none !important; } }

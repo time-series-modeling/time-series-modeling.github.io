@@ -1,0 +1,40 @@
+<section class="d2 part">  <div class="stats" id="stats"></div>
+
+  <div class="plate">
+    <h3>Total weekly units, and where the split falls</h3>
+    <div class="ctrl"><div class="seg" id="totToggle"><button aria-pressed="true" data-v="y">Units sold</button><button aria-pressed="false" data-v="promo">Share of items on promotion</button></div></div>
+    <div class="fig" id="figTotal"></div>
+    <div class="legend"><span><i style="background:var(--soft)"></i>train</span><span><i style="background:color-mix(in srgb,var(--a5) 30%,transparent)"></i>validation (last 14 train weeks, used for tuning)</span><span><i style="background:color-mix(in srgb,var(--a2) 22%,transparent)"></i>test (14 weeks, never touched)</span></div>
+    <p class="take">The panel is short: about 90 training weeks, so less than two full years. Anything yearly is seen once or twice. That is why "copy last year" is a weak yardstick here and why long input windows are expensive.</p>
+  </div>
+
+  <div class="plate">
+    <h3>Four kinds of series, one example each</h3>
+    <div class="ctrl"><div class="seg" id="exToggle"></div></div>
+    <div class="chk" id="exModels"></div>
+    <div class="fig" id="figEx"></div>
+    <div class="legend"><span><i style="background:var(--ink)"></i>actual units</span><span><i style="background:color-mix(in srgb,var(--a2) 25%,transparent)"></i>promotion week</span><span><i style="background:var(--a4)"></i>price index (right axis, 1 = usual price)</span></div>
+    <p class="cap" id="exCap"></p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Demand types (Syntetos–Boylan)</h3>
+      <div class="fig" id="figSB"></div>
+      <p class="cap">Each dot is a series (a random 600 of 2,000). ADI = average gap between non-zero weeks; CV² = variability of the non-zero sales. Thresholds 1.32 and 0.49.</p>
+      <p class="take">Intermittent series are 17 % of the panel but carry 40–46 % of the summed error in Lab 07. Watch them whenever you quote a mean.</p>
+    </div>
+    <div class="plate">
+      <h3>Velocity classes: most items are slow</h3>
+      <div class="fig" id="figClass"></div>
+      <p class="cap">Sale class from the data provider, A = fastest. Class J alone is two thirds of the sample.</p>
+      <p class="take">A typical item sells a few hundred units a week; the top 1 % sell over 47,000. Scaled metrics (RMSSE) stop the big items from drowning out the rest.</p>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>The product hierarchy (Lab 05)</h3>
+    <div class="fig" id="figHier"></div>
+    <p class="take">3,239 nodes in total. Buyers plan items, finance plans departments. Reconciliation makes them add up.</p>
+  </div>
+</section>

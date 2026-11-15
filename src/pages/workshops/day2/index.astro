@@ -1,0 +1,12 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import WorkshopDay2 from '../../../components/WorkshopDay2.astro';
+import { getTranslations } from '../../../i18n';
+
+const t = getTranslations('en');
+const locale = 'en' as const;
+---
+
+<Layout t={t} locale={locale} title={t.workshop.title} description={t.workshop.intro} currentPath="/workshops/day2">
+  <WorkshopDay2 t={t} locale={locale} />
+</Layout>

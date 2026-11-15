@@ -1,0 +1,67 @@
+<section class="d2 part">
+  <div class="plate">
+    <h3>The final leaderboard</h3>
+    <div class="ctrl"><div class="seg" id="lbMetric"><button aria-pressed="true" data-v="mean">Mean RMSSE</button><button aria-pressed="false" data-v="median">Median RMSSE</button><button aria-pressed="false" data-v="wape">WAPE</button></div><label><input type="checkbox" id="lbEns" checked> show ensembles (optimistic)</label></div>
+    <div class="fig" id="figLB"></div>
+    <div class="legend" id="lbLegend"></div>
+    <p class="take">Ensemble rows here include the half of the series that chose them, so they look better than they are. On the held-out half the top-3 average scores 1.25 vs 1.31 for the best single model and 1.36 for Day 1's LightGBM.</p>
+  </div>
+
+  <div class="plate">
+    <h3>The day as a journey (mean RMSSE)</h3>
+    <div class="fig" id="figJourney"></div>
+    <p class="take">The biggest single step is Day 1's: going global with covariates (1.53 → 1.17). Day 2 adds a few percent more, and the cheapest of those few percent is averaging.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Lab 01 · accuracy vs training time</h3>
+      <div class="fig" id="figL1"></div>
+      <p class="take">Out of the box no neural model beats LightGBM, and they take 10–20× longer to fit.</p>
+    </div>
+    <div class="plate">
+      <h3>Lab 02 · what tuning buys</h3>
+      <div class="fig" id="figL2"></div>
+      <p class="take">The loss is the one setting that matters (MSE 1.51 vs MAE 1.26). Eight Optuna trials cost 15× the compute for 1.6 %, about two noise floors.</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Lab 03 · do the models respond to a promotion?</h3>
+      <div class="fig" id="figL3"></div>
+      <p class="take">Direction right, size timid. The raw +82 % is an upper bound: promotions coincide with season and price cuts.</p>
+    </div>
+    <div class="plate">
+      <h3>Lab 03 · covariates: mean vs typical series</h3>
+      <div class="fig" id="figL3b"></div>
+      <p class="take">NHITS without covariates wins the mean; NHITSx wins 61 % of series, the median and WAPE. Intermittent items flip the mean.</p>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>Lab 05 · reconciliation: gain or loss at each level</h3>
+    <div class="ctrl"><div class="seg" id="l5Toggle"></div></div>
+    <div class="fig" id="figL5"></div>
+    <p class="take">Ratio to the incoherent base forecasts (below 1 = better). MinT-ols is cut off at 3× for readability; at the items it is 5.7× worse.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plate">
+      <h3>Lab 06 · do the intervals cover what they promise?</h3>
+      <div class="fig" id="figL6"></div>
+      <p class="take">Only quantile loss and pooled conformal reach the target. Per-series conformal is capped by n = 3.</p>
+    </div>
+    <div class="plate">
+      <h3>Lab 07 · who wins where (mean RMSSE by demand type)</h3>
+      <div class="fig" id="figL7"></div>
+      <p class="take">No model wins everywhere. NHITSx takes smooth, erratic and lumpy; the model without covariates wins intermittent.</p>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>Lab 07 · two rankings: mean RMSSE vs head-to-head rating</h3>
+    <div class="fig" id="figL7b"></div>
+    <p class="take">Lines that cross are models the mean and the duels disagree on. NHITSx is 2nd on the mean but 1st in the duels: it wins many ordinary series by a little and loses some intermittent ones by a lot.</p>
+  </div>
+</section>

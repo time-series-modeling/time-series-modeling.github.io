@@ -1,0 +1,15 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Subpage from '../../../components/day2/Subpage.astro';
+import Data from '../../../components/day2/Data.astro';
+import { getTranslations } from '../../../i18n';
+
+const t = getTranslations('en');
+const locale = 'en' as const;
+---
+
+<Layout t={t} locale={locale} title={t.workshop.pages.data.title} description={t.workshop.pages.data.lede} currentPath="/workshops/day2/data">
+  <Subpage t={t} locale={locale} page="data">
+    <Data />
+  </Subpage>
+</Layout>
