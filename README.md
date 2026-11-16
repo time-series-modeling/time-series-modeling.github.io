@@ -18,6 +18,7 @@ A professional landing page for the book *Time Series with PyTorch* by Graeme Da
 | `/feedback` | Feedback channels (GitHub issues, discussions, email) and social links |
 | `/workshops/day2` | Day 2 workshop hub: four looping explainer videos and links to the interactive pages |
 | `/workshops/day2/data`, `/methods`, `/results` | Interactive Day 2 figures (dataset, method widgets, lab results), rendered by `src/scripts/day2-widgets.js` from `src/data/day2.json` |
+| `/workshops/day2/models` | One interactive widget per Day 2 model (baselines, AutoETS, LightGBM, N-BEATS, NHITS, DLinear, covariates, Chronos-2, TimesFM), rendered by `src/scripts/day2-models.js` |
 | `/zh/` | Chinese home |
 | `/zh/authors` | Chinese authors page |
 | `/zh/erratum` | Chinese erratum page |
