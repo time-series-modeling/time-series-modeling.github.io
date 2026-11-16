@@ -14,6 +14,7 @@
           <tr><td><a href="#m-dlinear">DLinear</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>1.414</td></tr>
           <tr><td><a href="#m-cov">How covariates enter (x models)</a></td><td colspan="6">price index, promotion flag and discount depth as known future inputs; static series features</td></tr>
           <tr><td><a href="#m-chronos">Chronos-2 (via timecopilot)</a></td><td>pretrained transformer</td><td>millions of other series, then optionally ours</td><td>in context</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
+          <tr><td><a href="#m-timesfm">TimesFM 2.5 (via timecopilot)</a></td><td>pretrained decoder-only transformer</td><td>a large corpus of other series</td><td>no (zero-shot on sales)</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
         </tbody>
       </table>
     </div>
@@ -103,5 +104,13 @@
     <div class="fig" id="figCH"></div>
     <p class="cap" id="chCap"></p>
     <p class="take">Lab 04 runs Chronos-2 through <code>timecopilot</code> three ways: zero-shot on sales alone, zero-shot with planned price and promotions in context, and fine-tuned with LoRA on our training windows. The question is whether a model that has seen millions of other series beats our tuned global models, and whether fine-tuning is worth it. The lab has not been run yet, so there are no scores here.</p>
+  </div>
+
+  <div class="plate" id="m-timesfm">
+    <h3>TimesFM 2.5: a GPT-style model that predicts the next patch</h3>
+    <div class="ctrl"><div class="seg" id="tfStep"><button aria-pressed="true" data-v="0">1 · Patch</button><button aria-pressed="false" data-v="1">2 · Causal attention</button><button aria-pressed="false" data-v="2">3 · Next-patch training</button><button aria-pressed="false" data-v="3">4 · Forecast</button></div><button class="btn" id="tfPlay">▶ Play</button></div>
+    <div class="fig" id="figTF"></div>
+    <p class="cap" id="tfCap"></p>
+    <p class="take">Google's TimesFM reads the series left to right, like a language model reads text, and is trained to predict what comes after each patch. Chronos-2 instead reads the whole context at once and can use covariates; in Lab 04 TimesFM runs zero-shot on sales alone, as a second opinion. If two pretrained models that learned from different data agree, the zero-shot result is more trustworthy; if they disagree, neither is a free win. Both have Apache-2.0 weights. The lab has not been run yet, so there are no scores here.</p>
   </div>
 </section>

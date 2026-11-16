@@ -291,3 +291,65 @@ if (document.querySelector("#figCH")) {
   draw(); seg("#chStep", v => { st = +v; draw(); });
   $("#chPlay").addEventListener("click", e => { const btns = [...$("#chStep").querySelectorAll("button")]; animate(e.currentTarget, 300, f => { const k = Math.min(4, Math.floor(f / 60)); if (k !== st) { st = k; btns.forEach((b, i) => b.setAttribute("aria-pressed", i === k)); } t0 = f; draw(); }); });
 }
+
+/* ---------------- TimesFM 2.5 */
+if (document.querySelector("#figTF")) {
+  const P = 32, PAD = 3, NP = 3, OUT = 30, y = SM.y.slice(0, TEST0), act = SM.y.slice(TEST0, TEST0 + HZ);
+  const CAP = [
+    "TimesFM cuts the history into patches of 32 weeks. Our 93 weeks become 3 patches; the first 3 weeks are padding and masked out. Each patch is embedded into one token.",
+    "Decoder-only: each token may only look at itself and the tokens before it (the triangle). Token 2 never sees patch 3. This is how GPT-style language models read text.",
+    "In pretraining every token learns to predict the stretch that follows its own patch. So the model trains on many forecasts per series at once.",
+    "At forecast time the last token outputs a long output patch (128 steps in TimesFM 2.5) with a median and quantiles. We keep the first 14 weeks. Shown here is an illustrative fan, not a TimesFM run.",
+  ];
+  let st = 0, t0 = 0;
+  function draw() {
+    const W = 900, H = 250, L = 70, R = 150, s = mk("#figTF", W, H), x = lin(0, NP * P + OUT, L, W - R);
+    const mx = Math.max(...y, ...act) * 1.12, yy = lin(0, mx, 140, 18);
+    txt(s, L - 8, 80, "sales", { "text-anchor": "end", class: "t-ink" });
+    if (st === 3) el("path", { d: path(act.map((v, i) => [x(NP * P + i + .5), yy(v)])), fill: "none", stroke: css("muted"), "stroke-width": 1.4, "stroke-dasharray": "3 3" }, s);
+    el("rect", { x: x(0), y: 16, width: x(PAD) - x(0), height: 128, fill: "color-mix(in srgb,var(--muted) 18%,transparent)" }, s);
+    el("path", { d: path(y.map((v, i) => [x(PAD + i + .5), yy(v)])), fill: "none", stroke: css("ink"), "stroke-width": 1.6 }, s);
+    for (let k = 0; k < NP; k++) {
+      el("rect", { x: x(k * P) + 2, y: 16, width: x(P) - x(0) - 4, height: 128, fill: "none", stroke: css("a1"), "stroke-width": 1.5, rx: 4 }, s);
+      el("rect", { x: x(k * P) + 14, y: 154, width: x(P) - x(0) - 28, height: 20, fill: css("a1"), rx: 4 }, s);
+      txt(s, x(k * P + P / 2), 168, `token ${k + 1}`, { "text-anchor": "middle", style: "fill:var(--panel)" });
+    }
+    txt(s, x(0), 11, "padding", {});
+    if (st >= 1) {
+      // causal arcs: token k attends to tokens j <= k
+      const a = (t0 % 60) / 60;
+      for (let k = 1; k < NP; k++) for (let j = 0; j < k; j++) {
+        const xs_ = x(j * P + P / 2), xe = x(k * P + P / 2);
+        el("path", { d: `M${xe},176 Q${(xs_ + xe) / 2},${215 + 18 * (k - j)} ${xs_},176`, fill: "none", stroke: css("a1"), "stroke-width": 2, opacity: .35 + .5 * Math.abs(Math.sin(Math.PI * (a + j / 3))) }, s);
+      }
+      // mask matrix on the right (hidden on the forecast step to leave room)
+      if (st < 3) {
+      const mx0 = W - R + 30, cs = 26, my0 = 40;
+      txt(s, mx0, my0 - 10, "who sees whom", {});
+      for (let r = 0; r < NP; r++) for (let c = 0; c < NP; c++) el("rect", { x: mx0 + c * cs, y: my0 + r * cs, width: cs - 3, height: cs - 3, rx: 3, fill: c <= r ? css("a1") : "color-mix(in srgb,var(--muted) 20%,transparent)" }, s);
+      for (let r = 0; r < NP; r++) { txt(s, mx0 - 6, my0 + r * cs + 17, `${r + 1}`, { "text-anchor": "end" }); txt(s, mx0 + r * cs + 11, my0 + NP * cs + 14, `${r + 1}`, { "text-anchor": "middle" }); }
+      txt(s, mx0, my0 + NP * cs + 32, "row reads columns", {});
+      }
+    }
+    if (st === 2) for (let k = 0; k < NP - 1; k++) {
+      const x0 = x((k + 1) * P), x1 = x(Math.min((k + 1) * P + 24, NP * P));
+      el("rect", { x: x0, y: 20, width: x1 - x0, height: 120, fill: "color-mix(in srgb,var(--a2) 18%,transparent)", stroke: css("a2"), "stroke-dasharray": "4 3" }, s);
+      el("path", { d: `M${x(k * P + P / 2)},154 C${x(k * P + P / 2)},120 ${x0 + 10},150 ${x0 + 10},140`, fill: "none", stroke: css("a2"), "stroke-width": 1.8 }, s);
+      txt(s, (x0 + x1) / 2, 34, `target for token ${k + 1}`, { "text-anchor": "middle", style: "fill:var(--a2)" });
+    }
+    if (st === 3) {
+      const lvl = y.slice(-8).reduce((p, q) => p + q, 0) / 8, med = Array.from({ length: OUT }, (_, i) => lvl * (1 - .08 * Math.sin(i / 3)));
+      const poly = w => { const up = med.map((v, i) => [x(NP * P + i + .5), yy(v * (1 + w * (1 + i / 14)))]), lo = med.map((v, i) => [x(NP * P + i + .5), yy(Math.max(0, v * (1 - w * (1 + i / 14))))]).reverse(); return path(up) + "L" + lo.map(p => p.join(",")).join("L") + "Z"; };
+      el("path", { d: poly(.4), fill: "color-mix(in srgb,var(--a2) 15%,transparent)" }, s);
+      el("path", { d: poly(.2), fill: "color-mix(in srgb,var(--a2) 30%,transparent)" }, s);
+      el("path", { d: path(med.map((v, i) => [x(NP * P + i + .5), yy(v)])), fill: "none", stroke: css("a2"), "stroke-width": 2.4 }, s);
+      el("rect", { x: x(NP * P + HZ), y: 16, width: x(NP * P + OUT) - x(NP * P + HZ), height: 128, fill: "color-mix(in srgb,var(--panel) 65%,transparent)" }, s);
+      el("path", { d: `M${x(NP * P)},150 L${x(NP * P)},156 L${x(NP * P + HZ)},156 L${x(NP * P + HZ)},150`, fill: "none", stroke: css("a2"), "stroke-width": 1.5 }, s);
+      txt(s, x(NP * P + HZ / 2), 170, "keep 14 weeks", { "text-anchor": "middle", style: "fill:var(--a2)" });
+      txt(s, x(NP * P + OUT) + 4, 84, "… to 128", {});
+      el("path", { d: `M${x(NP * P - P / 2)},176 C${x(NP * P - P / 2)},200 ${x(NP * P + 6)},200 ${x(NP * P + 6)},176`, fill: "none", stroke: css("a2"), "stroke-width": 1.8 }, s);
+    }
+  }
+  draw(); seg("#tfStep", v => { st = +v; draw(); $("#tfCap").textContent = CAP[st]; }); $("#tfCap").textContent = CAP[0];
+  $("#tfPlay").addEventListener("click", e => { const btns = [...$("#tfStep").querySelectorAll("button")]; animate(e.currentTarget, 240, f => { const k = Math.min(3, Math.floor(f / 60)); if (k !== st) { st = k; btns.forEach((b, i) => b.setAttribute("aria-pressed", i === k)); $("#tfCap").textContent = CAP[k]; } t0 = f; draw(); }); });
+}
