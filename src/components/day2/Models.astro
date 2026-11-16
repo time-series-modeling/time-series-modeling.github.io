@@ -1,0 +1,107 @@
+<section class="d2 part">
+  <div class="plate">
+    <h3>Map of the models</h3>
+    <p class="cap">Every model on the Day 2 leaderboard, grouped by how it works. Click a name to jump to its widget.</p>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th>Model</th><th>Family</th><th>Learns from</th><th>Uses price / promo</th><th>Output</th><th>Lab</th><th>Mean RMSSE</th></tr></thead>
+        <tbody>
+          <tr><td><a href="#m-baselines">Naive, SeasonalNaive</a></td><td>rule</td><td>one series</td><td>no</td><td>point</td><td>00</td><td>1.332, 1.525</td></tr>
+          <tr><td><a href="#m-ets">AutoETS</a></td><td>statistical, local</td><td>one series</td><td>no</td><td>point (+ intervals)</td><td>00, 05</td><td>1.285</td></tr>
+          <tr><td><a href="#m-gbm">LightGBM, LightGBMx, _mono</a></td><td>gradient-boosted trees, global</td><td>all series</td><td>x / mono only</td><td>point</td><td>00, 03</td><td>1.169, 1.203, 1.204</td></tr>
+          <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>1.225, 1.229</td></tr>
+          <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>1.131–1.193</td></tr>
+          <tr><td><a href="#m-dlinear">DLinear</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>1.414</td></tr>
+          <tr><td><a href="#m-cov">How covariates enter (x models)</a></td><td colspan="6">price index, promotion flag and discount depth as known future inputs; static series features</td></tr>
+          <tr><td><a href="#m-chronos">Chronos-2 (via timecopilot)</a></td><td>pretrained transformer</td><td>millions of other series, then optionally ours</td><td>in context</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="take">Reconciliation (Lab 05), conformal intervals (Lab 06) and ensembles (Lab 07) sit on top of these models; their widgets are on the Methods page.</p>
+  </div>
+
+  <div class="plate" id="m-baselines">
+    <h3>Naive and SeasonalNaive: copy the past</h3>
+    <div class="ctrl"><div class="seg" id="blMode"><button aria-pressed="true" data-v="naive">Naive</button><button aria-pressed="false" data-v="snaive">SeasonalNaive</button><button aria-pressed="false" data-v="mean">Mean of last 13</button></div><button class="btn" id="blPlay">▶ Play</button></div>
+    <div class="fig" id="figBL"></div>
+    <div class="readout" id="blOut"></div>
+    <p class="cap">Real series (the smooth example), last 60 training weeks and the 14 test weeks.</p>
+    <p class="take">Naive repeats the last week; SeasonalNaive copies the same weeks one year earlier. They cost nothing and set the bar: SeasonalNaive is the RMSSE yardstick, and with under two years of history it is a weak one here.</p>
+  </div>
+
+  <div class="plate" id="m-ets">
+    <h3>AutoETS: an exponentially weighted memory</h3>
+    <div class="ctrl"><label>Smoothing α <input type="range" id="etsA" min="2" max="95" value="30"></label><label><input type="checkbox" id="etsTrend"> add a damped trend (β = 0.1, φ = 0.9)</label><button class="btn" id="etsPlay">▶ Play</button></div>
+    <div class="fig" id="figETS"></div>
+    <div class="fig" id="figETSw"></div>
+    <div class="readout" id="etsOut"></div>
+    <p class="take">Each week the level moves a fraction α towards the new observation: level = α·y + (1−α)·level. So the forecast is a weighted average of the past whose weights shrink by (1−α) per week (bottom chart). AutoETS fits α (and trend or season terms) per series and picks the variant with the best AICc. Here it ran with <code>season_length=1</code>: two years is too short to fit a yearly season.</p>
+  </div>
+
+  <div class="plate" id="m-gbm">
+    <h3>LightGBM: many small trees, each fixing the last one's mistakes</h3>
+    <div class="grid2">
+      <div>
+        <div class="ctrl"><label>Trees <input type="range" id="gbN" min="0" max="60" value="8"></label><label>Learning rate <input type="range" id="gbLR" min="5" max="100" value="30"></label><label><input type="checkbox" id="gbMono"> monotone: never sell more at a higher price</label></div>
+        <div class="fig" id="figGB"></div>
+        <div class="readout" id="gbOut"></div>
+      </div>
+      <div class="feat">
+        <p class="cap"><b>One training row = one series × one week.</b> Features LightGBM sees for week t:</p>
+        <ul>
+          <li><b>Lags</b> of sales: t−1, t−2, t−4, t−13, t−52</li>
+          <li><b>Rolling means</b> of last week's sales over 4 and 13 weeks</li>
+          <li><b>Calendar</b>: month, week of year</li>
+          <li><b>Scale</b>: each series standardised first, so one tree serves big and small items</li>
+          <li><b>x models add</b>: price index, promotion flag, discount depth</li>
+        </ul>
+        <p class="cap">Lab 03's <code>LightGBMx_mono</code> adds <code>monotone_constraints</code>: sales may only fall as the price rises.</p>
+      </div>
+    </div>
+    <p class="cap">Toy fit: units vs price index for the erratic example series (each dot is a week). Every tree is a single split here; the real trees have dozens of leaves and use all the features.</p>
+    <p class="take">Boosting adds trees one at a time, each fitted to what the trees so far got wrong, scaled down by the learning rate. Global: one model learns from all 2,000 series at once. Strong and cheap (about 2 s), but it only knows the features you build.</p>
+  </div>
+
+  <div class="plate" id="m-nbeats">
+    <h3>N-BEATS: explain, subtract, pass on</h3>
+    <div class="ctrl"><div class="seg" id="nbStep"><button aria-pressed="true" data-v="0">Input</button><button aria-pressed="false" data-v="1">Block 1: trend</button><button aria-pressed="false" data-v="2">Block 2: seasonality</button><button aria-pressed="false" data-v="3">Sum = forecast</button></div><button class="btn" id="nbPlay">▶ Play</button></div>
+    <div class="fig" id="figNB"></div>
+    <p class="cap">Interpretable N-BEATS on a synthetic series (trend + a 13-week cycle + noise), input 28 weeks, horizon 14, as in Lab 01. Left: what each block still has to explain. Right: the forecast building up.</p>
+    <p class="take">Each block reads the input, outputs a <b>backcast</b> (the part of the input it can explain) and a <b>forecast</b>. The backcast is subtracted and the rest goes to the next block; the forecasts add up. The interpretable version forces block 1 to be a low-degree polynomial and block 2 a set of sine waves; the generic version learns its own shapes and scored about the same (1.225 vs 1.229). The sine waves only fit within input + horizon (42 weeks), so it cannot represent a 52-week year.</p>
+  </div>
+
+  <div class="plate" id="m-nhits">
+    <h3>NHITS: each stack works at its own resolution</h3>
+    <div class="ctrl"><div class="seg" id="nhxStack"><button aria-pressed="true" data-v="0">Stack 1</button><button aria-pressed="false" data-v="1">Stack 2</button><button aria-pressed="false" data-v="2">Stack 3</button></div></div>
+    <div class="fig" id="figNHX"></div>
+    <div class="readout" id="nhxOut"></div>
+    <p class="cap">Real series (the smooth example): 28-week input, 14-week horizon. Pooling sizes and knot counts are the NHITS defaults for this horizon.</p>
+    <p class="take">Like N-BEATS, but each stack first max-pools its input (sees a blurred version) and predicts only a few knots that are interpolated across the horizon. Stack 1 pools by 2 and predicts 4 knots, stack 2 pools by 2 and predicts 7, stack 3 sees the raw input and predicts all 14: coarse shape first, weekly detail last. Fewer outputs per stack means fewer parameters and smoother forecasts. <b>NHITS_MQ</b> keeps the network but outputs five numbers per week (median and 80 / 95 % bounds), trained with the pinball loss.</p>
+  </div>
+
+  <div class="plate" id="m-dlinear">
+    <h3>DLinear: split into trend and remainder, then one straight line each</h3>
+    <div class="ctrl"><label>Moving-average window <input type="range" id="dlK" min="3" max="25" value="13" step="2"></label></div>
+    <div class="fig" id="figDL"></div>
+    <div class="fig" id="figDLw"></div>
+    <div class="readout" id="dlOut"></div>
+    <p class="cap">Fitted live in your browser on the smooth example series alone (ridge regression on its training windows). In the lab DLinear is global, trained on all series.</p>
+    <p class="take">A moving average splits the 28-week input into a smooth trend and the remainder. Each part goes through one linear layer (a 14 × 28 weight matrix, shown as heat maps) and the two outputs are added. No hidden layers at all: a useful check on how much the deep models really add. Here it scored worst of the neural group (1.414).</p>
+  </div>
+
+  <div class="plate" id="m-cov">
+    <h3>How covariates enter: NHITSx and LightGBMx</h3>
+    <div class="ctrl"><label>Put a promotion in horizon week <input type="range" id="cvW" min="0" max="14" value="0"></label><div class="seg" id="cvModel"><button aria-pressed="true" data-v="nhitsx">NHITSx (+39 %)</button><button aria-pressed="false" data-v="lgbx">LightGBMx (+55 %)</button></div></div>
+    <div class="fig" id="figCOV"></div>
+    <div class="readout" id="cvOut"></div>
+    <p class="take">Known-future inputs (price index, promotion, discount) are given for the input weeks <b>and</b> the 14 forecast weeks; static features (log mean sales, share of zero weeks, share of promotion weeks) describe the series. The model learns how they shift sales. Moving the slider applies each model's average promotion lift from Lab 03 to that week of its real forecast (an illustration of the lift size, not a re-run). The raw data shows +82 %, an upper bound.</p>
+  </div>
+
+  <div class="plate" id="m-chronos">
+    <h3>Chronos-2: a pretrained transformer reads the series as tokens</h3>
+    <div class="ctrl"><div class="seg" id="chStep"><button aria-pressed="true" data-v="0">1 · Scale</button><button aria-pressed="false" data-v="1">2 · Patch</button><button aria-pressed="false" data-v="2">3 · Add covariates</button><button aria-pressed="false" data-v="3">4 · Attend</button><button aria-pressed="false" data-v="4">5 · Quantiles</button></div><button class="btn" id="chPlay">▶ Play</button></div>
+    <div class="fig" id="figCH"></div>
+    <p class="cap" id="chCap"></p>
+    <p class="take">Lab 04 runs Chronos-2 through <code>timecopilot</code> three ways: zero-shot on sales alone, zero-shot with planned price and promotions in context, and fine-tuned with LoRA on our training windows. The question is whether a model that has seen millions of other series beats our tuned global models, and whether fine-tuning is worth it. The lab has not been run yet, so there are no scores here.</p>
+  </div>
+</section>

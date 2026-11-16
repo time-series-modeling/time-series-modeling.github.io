@@ -6,12 +6,12 @@ import '../../styles/day2.css';
 interface Props {
   t: Translations;
   locale: SupportedLocale;
-  page: 'data' | 'methods' | 'results';
+  page: 'data' | 'methods' | 'models' | 'results';
 }
 
 const { t, locale, page } = Astro.props;
 const w = t.workshop;
-const order = ['data', 'methods', 'results'] as const;
+const order = ['data', 'methods', 'models', 'results'] as const;
 ---
 
 <div class="py-12">
@@ -43,4 +43,5 @@ const order = ['data', 'methods', 'results'] as const;
 
 <script>
   import '../../scripts/day2-widgets.js';
+  import '../../scripts/day2-models.js';
 </script>
