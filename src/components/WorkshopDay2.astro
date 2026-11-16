@@ -1,6 +1,7 @@
 ---
 import type { Translations, SupportedLocale } from '../i18n';
 import { localePath } from '../i18n';
+import { PACKT_2026_11 } from '../data/workshops';
 
 interface Props {
   t: Translations;
@@ -9,7 +10,7 @@ interface Props {
 
 const { t, locale } = Astro.props;
 const w = t.workshop;
-const base = '/workshops/day2';
+const base = PACKT_2026_11.day2;
 ---
 
 <div class="py-16">

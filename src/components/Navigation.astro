@@ -2,6 +2,7 @@
 import type { Translations, SupportedLocale } from '../i18n';
 import { localePath, getAlternateLocales } from '../i18n';
 import BrandMark from './BrandMark.astro';
+import { PACKT_2026_11 } from '../data/workshops';
 
 interface Props {
   t: Translations;
@@ -17,7 +18,7 @@ const navLinks = [
   { key: 'authors', path: '/authors' },
   { key: 'erratum', path: '/erratum' },
   { key: 'feedback', path: '/feedback' },
-  { key: 'workshop', path: '/workshops/day2' },
+  { key: 'workshop', path: PACKT_2026_11.day2 },
 ] as const;
 
 function isActive(path: string) {
@@ -71,7 +72,7 @@ function isActive(path: string) {
           EN
         </a>
         <a
-          href={localePath('zh', currentPath.replace(/^\/(en)/, '') || '/')}
+          href={localePath('zh', currentPath.replace(/^\/zh(?=\/|$)/, '') || '/')}
           class={`rounded px-2 py-1 text-xs font-medium transition-colors ${
             locale === 'zh'
               ? 'bg-primary-600 text-white'

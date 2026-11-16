@@ -1,0 +1,15 @@
+---
+import Layout from '../../../../../layouts/Layout.astro';
+import Subpage from '../../../../../components/day2/Subpage.astro';
+import Methods from '../../../../../components/day2/Methods.astro';
+import { getTranslations } from '../../../../../i18n';
+
+const t = getTranslations('zh');
+const locale = 'zh' as const;
+---
+
+<Layout t={t} locale={locale} title={t.workshop.pages.methods.title} description={t.workshop.pages.methods.lede} currentPath="/zh/workshops/packt-2026-11/day2/methods">
+  <Subpage t={t} locale={locale} page="methods">
+    <Methods />
+  </Subpage>
+</Layout>
