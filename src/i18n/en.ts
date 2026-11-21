@@ -320,19 +320,19 @@ export const en = {
     subtitle:
       'Neural networks, foundation models and advanced topics for retail demand forecasting. Packt forecasting bootcamp, 28–29 November 2026.',
     intro:
-      'Short animations and interactive figures that go with the Day 2 labs. All numbers come from the reference run of the workshop notebooks (2,000 series).',
+      'Short animations and interactive figures that go with the Day 2 labs. All numbers come from the reference run of the workshop notebooks on the full dataset (all 17,241 eligible series).',
     videosTitle: 'Animations',
     explore: 'Explore the interactive figures',
     back: 'Back to the Day 2 overview',
     pages: {
-      data: { title: 'Day 2 · The data', lede: "Two years of a retailer's weekly sales: 2,000 series with prices, promotions and a five-level product hierarchy. Every lab uses the same stratified sample.", card: 'Weekly totals and the train / test split, one example series per demand type with real forecasts, demand types, velocity classes and the hierarchy.' },
+      data: { title: 'Day 2 · The data', lede: "Two years of a retailer's weekly sales: 17,241 series with prices, promotions and a five-level product hierarchy. Every lab uses all of them.", card: 'Weekly totals and the train / test split, one example series per demand type with real forecasts, demand types, velocity classes and the hierarchy.' },
       methods: { title: 'Day 2 · The methods', lede: 'One idea per widget. Move the sliders before you read the takeaway. These widgets use simulated or simplified data.', card: 'Rolling-origin evaluation, RMSSE, global training windows, NHITS stacks, quantile loss, the conformal coverage cap, reconciliation, Elo ratings and ensembles.' },
       models: { title: 'Day 2 · The models', lede: 'How each model in the workshop works, one interactive widget per model. Real series from the workshop data where possible; illustrations are labelled.', card: 'Naive and SeasonalNaive, AutoETS, LightGBM with its monotone constraint, N-BEATS, NHITS, DLinear, how covariates enter, Chronos-2 and TimesFM.' },
-      results: { title: 'Day 2 · The results', lede: 'Reference-run numbers from the workshop notebooks (2,000 series). Mean RMSSE unless noted; lower is better. Differences below about 0.01 are within seed noise.', card: 'The final leaderboard, the day as a journey, and one chart per lab: training cost, tuning, promotions, reconciliation, interval coverage and model selection.' },
+      results: { title: 'Day 2 · The results', lede: 'Reference-run numbers from the workshop notebooks (all 17,241 series). Mean RMSSE unless noted; lower is better. Differences below about 0.01 are within seed noise.', card: 'The final leaderboard, the day as a journey, and one chart per lab: training cost, tuning, promotions, reconciliation, interval coverage and model selection.' },
     },
-    footnote: 'Reference run, 15 November 2026: neuralforecast 3.2.2, mlforecast 1.1.0, statsforecast 2.1.1, hierarchicalforecast 1.5.3. Lab 04 (foundation models) is not included yet.',
+    footnote: 'Reference run on the full dataset (17,241 series), 21 November 2026: neuralforecast 3.2.2, mlforecast 1.1.0, statsforecast 2.1.1, hierarchicalforecast 1.5.3. Lab 04 (foundation models) is not included yet.',
     videos: [
-      { file: '01_dataset_tour.mp4', title: 'The dataset', desc: 'Two years of weekly sales for 2,000 series, the train / validation / test split, and one series of each demand type.' },
+      { file: '01_dataset_tour.mp4', title: 'The dataset', desc: 'Two years of weekly sales for the whole store (18,692 series, 17,241 of them modelled), the train / validation / test split, and one series of each demand type.' },
       { file: '03_nhits_stacks.mp4', title: 'NHITS, stack by stack', desc: 'The first stack draws the slow shape with a few points; later stacks add finer detail until the stacks sum to the series.' },
       { file: '02_conformal_cap.mp4', title: 'Why per-series conformal tops out near 75 %', desc: 'With only three calibration errors per series, no margin can promise 80 %. More scores, or pooling them across series, fixes it.' },
       { file: '04_reconciliation.mp4', title: 'Reconciliation', desc: 'Item and total forecasts that disagree, made to add up three ways: BottomUp, TopDown and MinTrace.' },

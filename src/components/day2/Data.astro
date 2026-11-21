@@ -1,10 +1,20 @@
+---
+import D from '../../data/day2.json';
+const R = D.res;
+const f = (v: number) => v.toLocaleString('en-US');
+const intShare = Math.round(100 * D.demand_types.intermittent / D.n_series);
+const errShare = Object.values(R.l7_int_share as Record<string, number>).map(v => Math.round(100 * v));
+const nodes = R.hier5.reduce((z: number, l: [string, number]) => z + l[1], 0);
+const jShare = D.sale_class.J / D.n_series;
+---
 <section class="d2 part">  <div class="stats" id="stats"></div>
 
   <div class="plate">
-    <h3>Total weekly units, and where the split falls</h3>
+    <h3>Total weekly units in the store, and where the split falls</h3>
     <div class="ctrl"><div class="seg" id="totToggle"><button aria-pressed="true" data-v="y">Units sold</button><button aria-pressed="false" data-v="promo">Share of items on promotion</button></div></div>
     <div class="fig" id="figTotal"></div>
     <div class="legend"><span><i style="background:var(--soft)"></i>train</span><span><i style="background:color-mix(in srgb,var(--a5) 30%,transparent)"></i>validation (last 14 train weeks, used for tuning)</span><span><i style="background:color-mix(in srgb,var(--a2) 22%,transparent)"></i>test (14 weeks, never touched)</span></div>
+    <p class="cap">All {f(D.raw_series)} series in the raw data. The {f(D.n_series)} series the labs model sell 99.7 % of these units (98.8 % in the test window, where new launches the labs leave out start to sell).</p>
     <p class="take">The panel is short: about 90 training weeks, so less than two full years. Anything yearly is seen once or twice. That is why "copy last year" is a weak yardstick here and why long input windows are expensive.</p>
   </div>
 
@@ -21,20 +31,20 @@
     <div class="plate">
       <h3>Demand types (Syntetos–Boylan)</h3>
       <div class="fig" id="figSB"></div>
-      <p class="cap">Each dot is a series (a random 600 of 2,000). ADI = average gap between non-zero weeks; CV² = variability of the non-zero sales. Thresholds 1.32 and 0.49.</p>
-      <p class="take">Intermittent series are 17 % of the panel but carry 40–46 % of the summed error in Lab 07. Watch them whenever you quote a mean.</p>
+      <p class="cap">Each dot is a series (a random 600 of {f(D.n_series)}). ADI = average gap between non-zero weeks; CV² = variability of the non-zero sales. Thresholds 1.32 and 0.49.</p>
+      <p class="take">Intermittent series are {intShare} % of the panel but carry {Math.min(...errShare)}–{Math.max(...errShare)} % of the summed error in Lab 07. Watch them whenever you quote a mean.</p>
     </div>
     <div class="plate">
       <h3>Velocity classes: most items are slow</h3>
       <div class="fig" id="figClass"></div>
-      <p class="cap">Sale class from the data provider, A = fastest. Class J alone is two thirds of the sample.</p>
-      <p class="take">A typical item sells a few hundred units a week; the top 1 % sell over 47,000. Scaled metrics (RMSSE) stop the big items from drowning out the rest.</p>
+      <p class="cap">Sale class from the data provider, A = fastest. Class J alone is {jShare > 0.6 && jShare < 0.7 ? 'two thirds' : Math.round(100 * jShare) + ' %'} of the series.</p>
+      <p class="take">A typical item sells about {f(Math.round(D.mean_units_q[2] / 100) * 100)} units a week; the top 1 % sell over {f(Math.floor(D.mean_units_q[5] / 1000) * 1000)}. Scaled metrics (RMSSE) stop the big items from drowning out the rest.</p>
     </div>
   </div>
 
   <div class="plate">
     <h3>The product hierarchy (Lab 05)</h3>
     <div class="fig" id="figHier"></div>
-    <p class="take">3,239 nodes in total. Buyers plan items, finance plans departments. Reconciliation makes them add up.</p>
+    <p class="take">{f(nodes)} nodes in total (the whole store has {D.store_hier.divisions} divisions, {D.store_hier.departments} departments, {f(D.store_hier.classes)} classes and {f(D.store_hier.subclasses)} subclasses; Lab 05 uses the departments, classes and subclasses that the modelled items sit in). Buyers plan items, finance plans departments. Reconciliation makes them add up.</p>
   </div>
 </section>

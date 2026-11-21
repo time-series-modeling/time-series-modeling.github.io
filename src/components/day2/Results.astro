@@ -1,28 +1,52 @@
+---
+import D from '../../data/day2.json';
+const R = D.res;
+const lb = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[1]]));
+const x3 = (v: number) => v.toFixed(3), x2 = (v: number) => v.toFixed(2), pc = (v: number) => Math.round(100 * v);
+const ho = R.l7_heldout;
+const bestNN = ['NHITS', 'NHITS_tuned', 'NHITS_noexog', 'NHITSx', 'NHITS_MQ'].reduce((b, m) => lb[m] < lb[b] ? m : b);
+const day2gain = pc(1 - lb[bestNN] / lb.LightGBM);
+const l1 = R.l1, lgbT = l1.find((r: any[]) => r[0] === 'LightGBM')[1], nnT = l1.filter((r: any[]) => r[0] !== 'LightGBM' && r[0] !== 'DLinear').map((r: any[]) => r[1]);
+const nnBest = Math.min(...l1.filter((r: any[]) => r[0] !== 'LightGBM').map((r: any[]) => r[2]));
+const loss = R.l2_loss || {}, cost = R.l2_cost;
+const beat = R.l2_spread.filter((p: any[]) => p[1] > R.l2_seed).map((p: any[]) => p[0] === 'input_size' ? 'the lookback' : p[0] === 'loss' ? 'the loss' : p[0]);
+const tuneX = Math.round(cost[1][1] / cost[0][1]), tuneGain = (100 * (1 - cost[1][2] / cost[0][2])).toFixed(1), noiseX = ((cost[0][2] - cost[1][2]) / R.l2_seed).toFixed(0);
+const lift = Object.fromEntries(R.l3_lift);
+const [a3, b3] = [R.l3_cov.NHITS_noexog, R.l3_cov.NHITSx];
+const l5 = R.l5, olsItem = l5.m['MinT-ols'][4] / l5.base[4], wvItem = l5.m['MinT-wls_var'][4] / l5.base[4], wvTot = l5.m['MinT-wls_var'][0] / l5.base[0];
+const T = R.l7_types, win = (t: string) => { const r = T.rows.find((x: any[]) => x[0] === t)[1]; return T.models[r.indexOf(Math.min(...r))]; };
+const covWins = ['smooth', 'erratic', 'lumpy'].filter(t => win(t) === 'NHITSx');
+const intWin = win('intermittent');
+const top = R.l7_mean.filter((r: any[]) => !/^(ETS|AutoETS|Naive|SeasonalNaive|DLinear)/.test(r[0])).slice(0, 10).map((r: any[]) => r[0]);
+const btO = R.l7_bt.map((r: any[]) => r[0]).filter((m: string) => top.includes(m));
+const mover = top.slice(0, 6).reduce((b: string, m: string) => (top.indexOf(m) - btO.indexOf(m)) > (top.indexOf(b) - btO.indexOf(b)) ? m : b);
+const ord = (n: number) => n + (['th', 'st', 'nd', 'rd'][n % 10 > 3 || [11, 12, 13].includes(n % 100) ? 0 : n % 10]);
+---
 <section class="d2 part">
   <div class="plate">
     <h3>The final leaderboard</h3>
     <div class="ctrl"><div class="seg" id="lbMetric"><button aria-pressed="true" data-v="mean">Mean RMSSE</button><button aria-pressed="false" data-v="median">Median RMSSE</button><button aria-pressed="false" data-v="wape">WAPE</button></div><label><input type="checkbox" id="lbEns" checked> show ensembles (optimistic)</label></div>
     <div class="fig" id="figLB"></div>
     <div class="legend" id="lbLegend"></div>
-    <p class="take">Ensemble rows here include the half of the series that chose them, so they look better than they are. On the held-out half the top-3 average scores 1.25 vs 1.31 for the best single model and 1.36 for Day 1's LightGBM.</p>
+    <p class="take">Ensemble rows here include the half of the series that chose them, so they look better than they are. On the held-out half the top-3 average scores {x3(ho.top3)} vs {x3(ho.best_single[1])} for the best single model ({ho.best_single[0]}) and {x3(ho.lightgbm)} for Day 1's LightGBM.</p>
   </div>
 
   <div class="plate">
     <h3>The day as a journey (mean RMSSE)</h3>
     <div class="fig" id="figJourney"></div>
-    <p class="take">The biggest single step is Day 1's: going global with covariates (1.53 → 1.17). Day 2 adds a few percent more, and the cheapest of those few percent is averaging.</p>
+    <p class="take">The biggest single step is Day 1's: going global with covariates ({x3(lb.SeasonalNaive)} → {x3(lb.LightGBM)}). Day 2's best single model ({bestNN}) adds about {day2gain} % more, and averaging adds a little on top.</p>
   </div>
 
   <div class="grid2">
     <div class="plate">
       <h3>Lab 01 · accuracy vs training time</h3>
       <div class="fig" id="figL1"></div>
-      <p class="take">Out of the box no neural model beats LightGBM, and they take 10–20× longer to fit.</p>
+      <p class="take">{nnBest > lb.LightGBM ? 'Out of the box no neural model beats LightGBM' : 'Out of the box the best neural model edges LightGBM'}, and they take {Math.round(Math.min(...nnT) / lgbT)}–{Math.round(Math.max(...nnT) / lgbT)}× longer to fit.</p>
     </div>
     <div class="plate">
       <h3>Lab 02 · what tuning buys</h3>
       <div class="fig" id="figL2"></div>
-      <p class="take">The loss is the one setting that matters (MSE 1.51 vs MAE 1.26). Eight Optuna trials cost 15× the compute for 1.6 %, about two noise floors.</p>
+      <p class="take">Only {beat.join(' and ')} move the score by more than the seed noise ({R.l2_seed.toFixed(3)}){loss.MSE && loss.MAE ? `; the loss most (validation RMSSE ${x2(loss.MSE)} with MSE vs ${x2(loss.MAE)} with MAE)` : ''}. Eight Optuna trials cost {tuneX}× the compute of one default fit for a {tuneGain} % gain on the test window.</p>
     </div>
   </div>
 
@@ -30,12 +54,12 @@
     <div class="plate">
       <h3>Lab 03 · do the models respond to a promotion?</h3>
       <div class="fig" id="figL3"></div>
-      <p class="take">Direction right, size timid. The raw +82 % is an upper bound: promotions coincide with season and price cuts.</p>
+      <p class="take">Direction right, size timid. The raw +{pc(lift.raw)} % is an upper bound: promotions coincide with season and price cuts.</p>
     </div>
     <div class="plate">
       <h3>Lab 03 · covariates: mean vs typical series</h3>
       <div class="fig" id="figL3b"></div>
-      <p class="take">NHITS without covariates wins the mean; NHITSx wins 61 % of series, the median and WAPE. Intermittent items flip the mean.</p>
+      <p class="take">{b3[0] < a3[0] ? `NHITSx wins the mean too, but only just (${x3(b3[0])} vs ${x3(a3[0])})` : `NHITS without covariates wins the mean (${x3(a3[0])} vs ${x3(b3[0])})`}; NHITSx is better on {pc(R.l3_better)} % of series, on the median and on WAPE. Intermittent items hold the mean back.</p>
     </div>
   </div>
 
@@ -43,7 +67,7 @@
     <h3>Lab 05 · reconciliation: gain or loss at each level</h3>
     <div class="ctrl"><div class="seg" id="l5Toggle"></div></div>
     <div class="fig" id="figL5"></div>
-    <p class="take">Ratio to the incoherent base forecasts (below 1 = better). MinT-ols is cut off at 3× for readability; at the items it is 5.7× worse.</p>
+    <p class="take">Ratio to the incoherent base forecasts (below 1 = better). Bars are cut off at 3× for readability; MinT-ols is {olsItem.toFixed(1)}× worse at the items. MinT-wls_var matches the base at the items ({x2(wvItem)}×) and is coherent, at a cost of {pc(wvTot - 1)} % on the store total.</p>
   </div>
 
   <div class="grid2">
@@ -55,13 +79,13 @@
     <div class="plate">
       <h3>Lab 07 · who wins where (mean RMSSE by demand type)</h3>
       <div class="fig" id="figL7"></div>
-      <p class="take">No model wins everywhere. NHITSx takes smooth, erratic and lumpy; the model without covariates wins intermittent.</p>
+      <p class="take">No model wins everywhere. NHITSx takes {covWins.join(', ')}; {intWin} (no covariates) wins intermittent.</p>
     </div>
   </div>
 
   <div class="plate">
     <h3>Lab 07 · two rankings: mean RMSSE vs head-to-head rating</h3>
     <div class="fig" id="figL7b"></div>
-    <p class="take">Lines that cross are models the mean and the duels disagree on. NHITSx is 2nd on the mean but 1st in the duels: it wins many ordinary series by a little and loses some intermittent ones by a lot.</p>
+    <p class="take">Lines that cross are models the mean and the duels disagree on. {mover} is {ord(top.indexOf(mover) + 1)} on the mean but {ord(btO.indexOf(mover) + 1)} in the duels: it wins many ordinary series by a little and loses some intermittent ones by a lot.</p>
   </div>
 </section>
