@@ -1,3 +1,14 @@
+---
+import D from '../../data/day2.json';
+const R = D.res;
+const f = (v: number) => v.toLocaleString('en-US');
+const lb = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[1]]));
+const r3 = (...k: string[]) => k.map(m => lb[m].toFixed(3)).join(', ');
+const nh = ['NHITS', 'NHITS_tuned', 'NHITSx', 'NHITS_MQ'].map(m => lb[m]);
+const lift = Object.fromEntries(R.l3_lift);
+const pct = (v: number) => '+' + Math.round(100 * v) + ' %';
+const lgbSec = R.l1.find((r: any[]) => r[0] === 'LightGBM')[1];
+---
 <section class="d2 part">
   <div class="plate">
     <h3>Map of the models</h3>
@@ -6,12 +17,12 @@
       <table class="mtable">
         <thead><tr><th>Model</th><th>Family</th><th>Learns from</th><th>Uses price / promo</th><th>Output</th><th>Lab</th><th>Mean RMSSE</th></tr></thead>
         <tbody>
-          <tr><td><a href="#m-baselines">Naive, SeasonalNaive</a></td><td>rule</td><td>one series</td><td>no</td><td>point</td><td>00</td><td>1.332, 1.525</td></tr>
-          <tr><td><a href="#m-ets">AutoETS</a></td><td>statistical, local</td><td>one series</td><td>no</td><td>point (+ intervals)</td><td>00, 05</td><td>1.285</td></tr>
-          <tr><td><a href="#m-gbm">LightGBM, LightGBMx, _mono</a></td><td>gradient-boosted trees, global</td><td>all series</td><td>x / mono only</td><td>point</td><td>00, 03</td><td>1.169, 1.203, 1.204</td></tr>
-          <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>1.225, 1.229</td></tr>
-          <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>1.131–1.193</td></tr>
-          <tr><td><a href="#m-dlinear">DLinear</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>1.414</td></tr>
+          <tr><td><a href="#m-baselines">Naive, SeasonalNaive</a></td><td>rule</td><td>one series</td><td>no</td><td>point</td><td>00</td><td>{r3('Naive', 'SeasonalNaive')}</td></tr>
+          <tr><td><a href="#m-ets">AutoETS</a></td><td>statistical, local</td><td>one series</td><td>no</td><td>point (+ intervals)</td><td>00, 05</td><td>{r3('AutoETS')}</td></tr>
+          <tr><td><a href="#m-gbm">LightGBM, LightGBMx, _mono</a></td><td>gradient-boosted trees, global</td><td>all series</td><td>x / mono only</td><td>point</td><td>00, 03</td><td>{r3('LightGBM', 'LightGBMx', 'LightGBMx_mono')}</td></tr>
+          <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('NBEATS_generic', 'NBEATS_interpretable')}</td></tr>
+          <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>{Math.min(...nh).toFixed(3)}–{Math.max(...nh).toFixed(3)}</td></tr>
+          <tr><td><a href="#m-dlinear">DLinear</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('DLinear')}</td></tr>
           <tr><td><a href="#m-cov">How covariates enter (x models)</a></td><td colspan="6">price index, promotion flag and discount depth as known future inputs; static series features</td></tr>
           <tr><td><a href="#m-chronos">Chronos-2 (via timecopilot)</a></td><td>pretrained transformer</td><td>millions of other series, then optionally ours</td><td>in context</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
           <tr><td><a href="#m-timesfm">TimesFM 2.5 (via timecopilot)</a></td><td>pretrained decoder-only transformer</td><td>a large corpus of other series</td><td>no (zero-shot on sales)</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
@@ -60,7 +71,7 @@
       </div>
     </div>
     <p class="cap">Toy fit: units vs price index for the erratic example series (each dot is a week). Every tree is a single split here; the real trees have dozens of leaves and use all the features.</p>
-    <p class="take">Boosting adds trees one at a time, each fitted to what the trees so far got wrong, scaled down by the learning rate. Global: one model learns from all 2,000 series at once. Strong and cheap (about 2 s), but it only knows the features you build.</p>
+    <p class="take">Boosting adds trees one at a time, each fitted to what the trees so far got wrong, scaled down by the learning rate. Global: one model learns from all {f(D.n_series)} series at once. Strong and cheap (about {Math.round(lgbSec)} s), but it only knows the features you build.</p>
   </div>
 
   <div class="plate" id="m-nbeats">
@@ -68,7 +79,7 @@
     <div class="ctrl"><div class="seg" id="nbStep"><button aria-pressed="true" data-v="0">Input</button><button aria-pressed="false" data-v="1">Block 1: trend</button><button aria-pressed="false" data-v="2">Block 2: seasonality</button><button aria-pressed="false" data-v="3">Sum = forecast</button></div><button class="btn" id="nbPlay">▶ Play</button></div>
     <div class="fig" id="figNB"></div>
     <p class="cap">Interpretable N-BEATS on a synthetic series (trend + a 13-week cycle + noise), input 28 weeks, horizon 14, as in Lab 01. Left: what each block still has to explain. Right: the forecast building up.</p>
-    <p class="take">Each block reads the input, outputs a <b>backcast</b> (the part of the input it can explain) and a <b>forecast</b>. The backcast is subtracted and the rest goes to the next block; the forecasts add up. The interpretable version forces block 1 to be a low-degree polynomial and block 2 a set of sine waves; the generic version learns its own shapes and scored about the same (1.225 vs 1.229). The sine waves only fit within input + horizon (42 weeks), so it cannot represent a 52-week year.</p>
+    <p class="take">Each block reads the input, outputs a <b>backcast</b> (the part of the input it can explain) and a <b>forecast</b>. The backcast is subtracted and the rest goes to the next block; the forecasts add up. The interpretable version forces block 1 to be a low-degree polynomial and block 2 a set of sine waves; the generic version learns its own shapes and scored about the same ({r3('NBEATS_generic', 'NBEATS_interpretable').replace(', ', ' vs ')}). The sine waves only fit within input + horizon (42 weeks), so it cannot represent a 52-week year.</p>
   </div>
 
   <div class="plate" id="m-nhits">
@@ -87,15 +98,15 @@
     <div class="fig" id="figDLw"></div>
     <div class="readout" id="dlOut"></div>
     <p class="cap">Fitted live in your browser on the smooth example series alone (ridge regression on its training windows). In the lab DLinear is global, trained on all series.</p>
-    <p class="take">A moving average splits the 28-week input into a smooth trend and the remainder. Each part goes through one linear layer (a 14 × 28 weight matrix, shown as heat maps) and the two outputs are added. No hidden layers at all: a useful check on how much the deep models really add. Here it scored worst of the neural group (1.414).</p>
+    <p class="take">A moving average splits the 28-week input into a smooth trend and the remainder. Each part goes through one linear layer (a 14 × 28 weight matrix, shown as heat maps) and the two outputs are added. No hidden layers at all: a useful check on how much the deep models really add. Here it scored worst of the neural group ({r3('DLinear')}).</p>
   </div>
 
   <div class="plate" id="m-cov">
     <h3>How covariates enter: NHITSx and LightGBMx</h3>
-    <div class="ctrl"><label>Put a promotion in horizon week <input type="range" id="cvW" min="0" max="14" value="0"></label><div class="seg" id="cvModel"><button aria-pressed="true" data-v="nhitsx">NHITSx (+39 %)</button><button aria-pressed="false" data-v="lgbx">LightGBMx (+55 %)</button></div></div>
+    <div class="ctrl"><label>Put a promotion in horizon week <input type="range" id="cvW" min="0" max="14" value="0"></label><div class="seg" id="cvModel"><button aria-pressed="true" data-v="nhitsx">NHITSx ({pct(lift.NHITSx)})</button><button aria-pressed="false" data-v="lgbx">LightGBMx ({pct(lift.LightGBMx)})</button></div></div>
     <div class="fig" id="figCOV"></div>
     <div class="readout" id="cvOut"></div>
-    <p class="take">Known-future inputs (price index, promotion, discount) are given for the input weeks <b>and</b> the 14 forecast weeks; static features (log mean sales, share of zero weeks, share of promotion weeks) describe the series. The model learns how they shift sales. Moving the slider applies each model's average promotion lift from Lab 03 to that week of its real forecast (an illustration of the lift size, not a re-run). The raw data shows +82 %, an upper bound.</p>
+    <p class="take">Known-future inputs (price index, promotion, discount) are given for the input weeks <b>and</b> the 14 forecast weeks; static features (log mean sales, share of zero weeks, share of promotion weeks) describe the series. The model learns how they shift sales. Moving the slider applies each model's median promotion lift from Lab 03 to that week of its real forecast (an illustration of the lift size, not a re-run). The raw data shows {pct(lift.raw)}, an upper bound.</p>
   </div>
 
   <div class="plate" id="m-chronos">

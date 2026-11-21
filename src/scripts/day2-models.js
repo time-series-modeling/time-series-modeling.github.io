@@ -231,7 +231,7 @@ if (document.querySelector("#figDL")) {
 if (document.querySelector("#figCOV")) {
   let model = "nhitsx";
   function draw() {
-    const wk = +$("#cvW").value, lift = model === "nhitsx" ? .39 : .55, base = model === "nhitsx" ? SM.fc.NHITSx : SM.fc.LightGBM;
+    const wk = +$("#cvW").value, lift = Object.fromEntries(D.res.l3_lift)[model === "nhitsx" ? "NHITSx" : "LightGBMx"], base = model === "nhitsx" ? SM.fc.NHITSx : SM.fc.LightGBM;
     const IN = 28, W = 900, H = 330, L = 120, R = 12, s = mk("#figCOV", W, H), x = lin(0, IN + HZ, L, W - R);
     const rows = [["sales history", 0], ["price index", 1], ["promotion", 2], ["discount depth", 3], ["static", 4]];
     const rowY = i => 20 + i * 30;
@@ -255,7 +255,7 @@ if (document.querySelector("#figCOV")) {
     el("path", { d: path(base.map((v, i) => [x(IN + i + .5), y(v)])), fill: "none", stroke: css("muted"), "stroke-width": 1.4, "stroke-dasharray": "4 3" }, s);
     el("path", { d: path(fc.map((v, i) => [x(IN + i + .5), y(v)])), fill: "none", stroke: css(model === "nhitsx" ? "a1" : "a3"), "stroke-width": 2.6 }, s);
     txt(s, L - 8, (rowY(5) + H) / 2, "forecast", { "text-anchor": "end", class: "t-ink" });
-    $("#cvOut").innerHTML = wk ? `promotion in week ${wk}: forecast ${fmt(base[wk - 1])} → <b>${fmt(fc[wk - 1])}</b> units (+${Math.round(lift * 100)} %, the ${model === "nhitsx" ? "NHITSx" : "LightGBMx"} average lift in Lab 03)` : "no promotion planned in the horizon: the model's real test forecast (dashed)";
+    $("#cvOut").innerHTML = wk ? `promotion in week ${wk}: forecast ${fmt(base[wk - 1])} → <b>${fmt(fc[wk - 1])}</b> units (+${Math.round(lift * 100)} %, the ${model === "nhitsx" ? "NHITSx" : "LightGBMx"} median lift in Lab 03)` : "no promotion planned in the horizon: the model's real test forecast (dashed)";
   }
   $("#cvW").addEventListener("input", draw); seg("#cvModel", v => { model = v; draw(); }); draw();
 }

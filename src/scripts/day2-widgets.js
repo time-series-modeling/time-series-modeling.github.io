@@ -1,4 +1,5 @@
 import D from "../data/day2.json";
+const RS = D.res;   // every result number comes from the full reference run (see day2.json → res)
 const $ = s => document.querySelector(s);
 const NS = "http://www.w3.org/2000/svg";
 const css = v => `var(--${v})`;
@@ -21,7 +22,7 @@ const FAM = { nn: ["a1", "neural (Day 2)"], gbm: ["a3", "LightGBM"], stat: ["a4"
 if (document.querySelector("#stats")) {
 /* ---------------- stats strip */
 (() => {
-  const items = [["18,692", "series in the raw data"], ["2,000", "in the workshop sample"], ["107", "weeks, Jul 2023 – Jul 2025"], ["14", "week forecast horizon"], ["5", "hierarchy levels, 3,239 nodes"], ["23", "models on the final board"]];
+  const items = [[fmt(D.raw_series), "series in the raw data"], [fmt(D.n_series), "eligible series, all of them used"], [String(D.n_weeks), "weeks, Jul 2023 – Jul 2025"], ["14", "week forecast horizon"], ["5", `hierarchy levels, ${fmt(RS.hier5.reduce((z, l) => z + l[1], 0))} nodes`], [String(RS.lb.length), "models on the final board"]];
   $("#stats").innerHTML = items.map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
 })();
 
@@ -49,8 +50,10 @@ if (document.querySelector("#exToggle")) {
 const MODELS = [["NHITSx", "a1"], ["LightGBM", "a3"], ["NHITS_noexog", "a4"], ["ENS_mean_top3", "a2"], ["SeasonalNaive", "muted"]];
 const exOn = new Set(["NHITSx", "LightGBM"]);
 let exType = "smooth";
-const EXCAP = { smooth: "Smooth: sells most weeks with moderate swings. 59 % of the sample; every global model does well here (NHITSx 0.64).", erratic: "Erratic: sells most weeks but the size swings a lot, often with promotions. Covariates help most here (NHITSx 0.72 vs NHITS_noexog 0.88).", intermittent: "Intermittent: many zero weeks. 17 % of series, about 40 % of the summed error. The model without covariates wins (2.59 vs 3.02).", lumpy: "Lumpy: zero weeks and big spikes. The hardest to time; NHITSx 1.33." };
-$("#exToggle").innerHTML = Object.keys(EXCAP).map(k => `<button aria-pressed="${k === exType}" data-v="${k}">${k[0].toUpperCase() + k.slice(1)} · ${D.demand_types[k]}</button>`).join("");
+const DT = RS.l7_types, dtv = (t, m) => DT.rows.find(r => r[0] === t)[1][DT.models.indexOf(m)], pct = t => Math.round(100 * D.demand_types[t] / D.n_series) + " %";
+const intBest = DT.models.reduce((b, m) => dtv("intermittent", m) < dtv("intermittent", b) ? m : b);
+const EXCAP = { smooth: `Smooth: sells most weeks with moderate swings. ${pct("smooth")} of series; every global model does well here (NHITSx ${dtv("smooth", "NHITSx").toFixed(2)}).`, erratic: `Erratic: sells most weeks but the size swings a lot, often with promotions. Covariates help most here (NHITSx ${dtv("erratic", "NHITSx").toFixed(2)} vs NHITS_noexog ${dtv("erratic", "NHITS_noexog").toFixed(2)}).`, intermittent: `Intermittent: many zero weeks. ${pct("intermittent")} of series, about ${Math.round(100 * RS.l7_int_share.NHITSx)} % of the summed error. Models without covariates do best (${intBest} ${dtv("intermittent", intBest).toFixed(2)} vs NHITSx ${dtv("intermittent", "NHITSx").toFixed(2)}).`, lumpy: `Lumpy: zero weeks and big spikes. The hardest to time; NHITSx ${dtv("lumpy", "NHITSx").toFixed(2)}.` };
+$("#exToggle").innerHTML = Object.keys(EXCAP).map(k => `<button aria-pressed="${k === exType}" data-v="${k}">${k[0].toUpperCase() + k.slice(1)} · ${fmt(D.demand_types[k])}</button>`).join("");
 $("#exModels").innerHTML = MODELS.map(([m, c]) => `<label><input type="checkbox" data-m="${m}" ${exOn.has(m) ? "checked" : ""}> <span style="color:var(--${c});font-weight:600">${m}</span></label>`).join("");
 $("#exModels").addEventListener("change", e => { const m = e.target.dataset.m; e.target.checked ? exOn.add(m) : exOn.delete(m); drawEx(); });
 function drawEx() {
@@ -86,8 +89,8 @@ if (document.querySelector("#figSB")) {
   el("line", { x1: X(1.32), x2: X(1.32), y1: T, y2: H - B, stroke: css("ink"), "stroke-dasharray": "4 3" }, s);
   el("line", { x1: L, x2: W - R, y1: Y(0.49), y2: Y(0.49), stroke: css("ink"), "stroke-dasharray": "4 3" }, s);
   const lab = (x, y, t) => { txt(s, x, y, t + " · " + D.demand_types[t], { class: "t-b", style: `fill:var(--${C[t]})` }); };
-  const lab2 = (x, y, t, anc) => txt(s, x, y, t + " · " + D.demand_types[t], { class: "t-b", "text-anchor": anc, style: `fill:var(--${C[t]});font-size:12px` });
-  lab2(X(1.32) - 6, H - B - 8, "smooth", "end"); lab2(X(1.32) - 6, T + 12, "erratic", "end"); lab2(W - R - 4, H - B - 8, "intermittent", "end"); lab2(W - R - 4, T + 12, "lumpy", "end");
+  const lab2 = (x, y, t, anc) => txt(s, x, y, t + " · " + fmt(D.demand_types[t]), { class: "t-b", "text-anchor": anc, style: `fill:var(--${C[t]});font-size:12px` });
+  txt(s, X(1.32) + 6, H - B - 8, "← smooth · " + fmt(D.demand_types.smooth), { class: "t-b", style: `fill:var(--${C.smooth});font-size:12px` }); txt(s, X(1.32) + 6, T + 12, "← erratic · " + fmt(D.demand_types.erratic), { class: "t-b", style: `fill:var(--${C.erratic});font-size:12px` }); lab2(W - R - 4, H - B - 8, "intermittent", "end"); lab2(W - R - 4, T + 12, "lumpy", "end");
   txt(s, (L + W - R) / 2, H - 6, "ADI: weeks between sales (log)", { "text-anchor": "middle" });
   txt(s, 12, (T + H - B) / 2, "CV² of non-zero sales (log)", { transform: `rotate(-90 12 ${(T + H - B) / 2})`, "text-anchor": "middle" });
 })();
@@ -97,9 +100,9 @@ if (document.querySelector("#figClass")) {
 /* ---------------- velocity classes */
 (() => {
   const W = 460, H = 340, L = 44, R = 14, T = 20, B = 36, s = mk("#figClass", W, H), k = Object.keys(D.sale_class), v = Object.values(D.sale_class);
-  const bw = (W - L - R) / k.length, y = lin(0, 1400, H - B, T);
-  yAxis(s, y, [0, 500, 1000], L, W - R);
-  k.forEach((c, i) => { el("rect", { x: L + i * bw + 4, y: y(v[i]), width: bw - 8, height: H - B - y(v[i]), fill: css(c === "J" ? "a2" : "a1"), rx: 2 }, s); txt(s, L + i * bw + bw / 2, H - B + 14, c, { "text-anchor": "middle", class: "t-ink" }); txt(s, L + i * bw + bw / 2, y(v[i]) - 5, v[i], { "text-anchor": "middle" }); });
+  const vmx = Math.max(...v) * 1.1, bw = (W - L - R) / k.length, y = lin(0, vmx, H - B, T);
+  yAxis(s, y, ticks(0, vmx, 4), L, W - R);
+  k.forEach((c, i) => { el("rect", { x: L + i * bw + 4, y: y(v[i]), width: bw - 8, height: H - B - y(v[i]), fill: css(c === "J" ? "a2" : "a1"), rx: 2 }, s); txt(s, L + i * bw + bw / 2, H - B + 14, c, { "text-anchor": "middle", class: "t-ink" }); txt(s, L + i * bw + bw / 2, y(v[i]) - 5, fmt(v[i]), { "text-anchor": "middle" }); });
   txt(s, (W) / 2, H - 6, "sale class (A = fastest)", { "text-anchor": "middle" });
 })();
 
@@ -107,8 +110,8 @@ if (document.querySelector("#figClass")) {
 if (document.querySelector("#figHier")) {
 /* ---------------- hierarchy funnel */
 (() => {
-  const lv = [["Total", 1], ["Departments", 125], ["Classes", 344], ["Subclasses", 772], ["Items", 1997]];
-  const W = 900, H = 230, s = mk("#figHier", W, H), mx = Math.log10(1997);
+  const lv = RS.hier5;
+  const W = 900, H = 230, s = mk("#figHier", W, H), mx = Math.log10(lv[lv.length - 1][1]);
   lv.forEach(([n, c], i) => {
     const w = 80 + (W - 260) * Math.log10(c) / mx, y0 = 12 + i * 42;
     el("rect", { x: (W - w) / 2, y: y0, width: w, height: 32, rx: 4, fill: css(["ink", "a1", "a1", "a3", "a2"][i]), opacity: i ? .85 : 1 }, s);
@@ -174,7 +177,7 @@ function drawGL() {
   el("rect", { x: W - R + 26, y: 90, width: 84, height: 70, rx: 8, fill: css("a1") }, s);
   txt(s, W - R + 68, 122, "one", { "text-anchor": "middle", style: "fill:var(--panel);font-weight:600" }); txt(s, W - R + 68, 138, "model", { "text-anchor": "middle", style: "fill:var(--panel);font-weight:600" });
   for (let k = 0; k < 6; k++) el("line", { x1: W - R + 4, y1: 8 + k * rowH + 18, x2: W - R + 24, y2: 125, class: "ax" }, s);
-  $("#glOut").textContent = glWins.length ? `${glWins.length} windows drawn from ${new Set(glWins.map(w => w[0])).size} of 6 series (the real run: 2,000 series, thousands of windows per epoch)` : "Each orange box is a training example: 28 weeks in, 14 weeks out.";
+  $("#glOut").textContent = glWins.length ? `${glWins.length} windows drawn from ${new Set(glWins.map(w => w[0])).size} of 6 series (the real run: ${fmt(D.n_series)} series, thousands of windows per epoch)` : "Each orange box is a training example: 28 weeks in, 14 weeks out.";
 }
 const glR = rng(99);
 $("#glBtn").addEventListener("click", () => { for (let i = 0; i < 20; i++) glWins.push([Math.floor(glR() * 6), Math.floor(glR() * 76)]); drawGL(); });
@@ -286,7 +289,8 @@ function drawELO() {
   yAxis(s, y, [0, .25, .5, .75, 1], L, W - R, v => Math.round(v * 100) + "%");
   el("path", { d: path(Array.from({ length: 81 }, (_, i) => -400 + i * 10).map(v => [x(v), y(p(v))])), fill: "none", stroke: css("a1"), "stroke-width": 2.2 }, s);
   el("circle", { cx: x(d), cy: y(p(d)), r: 6, fill: css("a2") }, s);
-  el("circle", { cx: x(210), cy: y(p(210)), r: 4, fill: "none", stroke: css("ink") }, s); txt(s, x(210) + 6, y(p(210)) + 14, "NHITSx vs Naive");
+  const btr = Object.fromEntries(RS.l7_bt.map(r => [r[0], r[1]])), dN = btr.NHITSx - btr.Naive;
+  el("circle", { cx: x(dN), cy: y(p(dN)), r: 4, fill: "none", stroke: css("ink") }, s); txt(s, x(dN) + 6, y(p(dN)) + 14, "NHITSx vs Naive");
   [-400, -200, 0, 200, 400].forEach(v => txt(s, x(v), H - 12, v, { "text-anchor": "middle" }));
   txt(s, (L + W) / 2, H - 1, "rating difference (points)", { "text-anchor": "middle" });
   $("#eloOut").innerHTML = `${d > 0 ? "+" : ""}${d} points → wins <b>${(p(d) * 100).toFixed(0)}%</b> of series`;
@@ -313,7 +317,7 @@ $("#enR").addEventListener("input", drawEN); drawEN();
 }
 if (document.querySelector("#lbLegend")) {
 /* ---------------- leaderboard */
-const LB = [["ENS_mean_top3", 1.034, .547, .272, "ens"], ["SEL_by_class", 1.121, .563, .275, "ens"], ["ENS_mean_all", 1.124, .621, .332, "ens"], ["NHITS_noexog", 1.131, .623, .334, "nn"], ["ENS_median_all", 1.142, .626, .335, "ens"], ["NHITS_MQ", 1.151, .643, .329, "nn"], ["NHITSx", 1.153, .563, .269, "nn"], ["LightGBM", 1.169, .601, .310, "gbm"], ["NHITS_tuned", 1.174, .647, .357, "nn"], ["NHITS", 1.193, .660, .352, "nn"], ["LightGBMx", 1.203, .631, .342, "gbm"], ["LightGBMx_mono", 1.204, .629, .340, "gbm"], ["NBEATS_generic", 1.225, .658, .346, "nn"], ["NBEATS_interp", 1.229, .658, .343, "nn"], ["ETS_MinT-shrink", 1.251, .710, .424, "stat"], ["AutoETS", 1.285, .708, .426, "stat"], ["ETS_TopDown", 1.320, .727, .437, "stat"], ["LightGBM_conf", 1.325, .744, .436, "gbm"], ["LightGBM_noexog", 1.331, .762, .453, "gbm"], ["Naive", 1.332, .771, .470, "base"], ["DLinear", 1.414, .796, .456, "nn"], ["SeasonalNaive", 1.525, .929, .438, "base"], ["ETS_MinT-wls", 1.813, .773, .434, "stat"]];
+const LB = RS.lb;
 $("#lbLegend").innerHTML = Object.values(FAM).map(([c, n]) => `<span><i style="background:var(--${c})"></i>${n}</span>`).join("");
 let lbM = "mean";
 function drawLB() {
@@ -331,21 +335,25 @@ drawLB(); seg("#lbMetric", v => { lbM = v; drawLB(); }); $("#lbEns").addEventLis
 if (document.querySelector("#figJourney")) {
 /* ---------------- journey */
 (() => {
-  const st = [["SeasonalNaive", 1.525, "base"], ["AutoETS", 1.285, "stat"], ["LightGBM (Day 1)", 1.169, "gbm"], ["NHITS default", 1.193, "nn"], ["NHITS tuned", 1.174, "nn"], ["NHITS + covariates", 1.153, "nn"], ["NHITS no covariates", 1.131, "nn"]];
-  const W = 900, H = 280, L = 50, R = 20, T = 20, B = 60, s = mk("#figJourney", W, H), x = i => L + (i + .5) * (W - L - R) / st.length, y = lin(1.0, 1.6, H - B, T);
-  yAxis(s, y, [1.0, 1.2, 1.4, 1.6], L, W - R, v => v.toFixed(1));
+  const LBm = Object.fromEntries(RS.lb.map(r => [r[0], r[1]]));
+  const st = [["SeasonalNaive", LBm.SeasonalNaive, "base"], ["AutoETS", LBm.AutoETS, "stat"], ["LightGBM (Day 1)", LBm.LightGBM, "gbm"], ["NHITS default", LBm.NHITS, "nn"], ["NHITS tuned", LBm.NHITS_tuned, "nn"], ["NHITS no covariates", LBm.NHITS_noexog, "nn"], ["NHITS + covariates", LBm.NHITSx, "nn"]];
+  const ylo = Math.floor(Math.min(...st.map(d => d[1])) * 10) / 10 - 0.1, yhi = Math.ceil(Math.max(...st.map(d => d[1])) * 10) / 10;
+  const W = 900, H = 280, L = 50, R = 20, T = 20, B = 60, s = mk("#figJourney", W, H), x = i => L + (i + .5) * (W - L - R) / st.length, y = lin(ylo, yhi, H - B, T);
+  yAxis(s, y, ticks(ylo, yhi, 4), L, W - R, v => v.toFixed(1));
   el("path", { d: path(st.map((d, i) => [x(i), y(d[1])])), fill: "none", stroke: css("line"), "stroke-width": 2 }, s);
   st.forEach((d, i) => { el("circle", { cx: x(i), cy: y(d[1]), r: 7, fill: css(FAM[d[2]][0]) }, s); txt(s, x(i), y(d[1]) - 12, d[1].toFixed(3), { "text-anchor": "middle", class: "t-ink" }); const parts = d[0].split(" "); txt(s, x(i), H - B + 20, parts.slice(0, 2).join(" "), { "text-anchor": "middle" }); if (parts.length > 2) txt(s, x(i), H - B + 34, parts.slice(2).join(" "), { "text-anchor": "middle" }); });
-  txt(s, W - R, T, "Held-out half: top-3 average 1.246 vs best single 1.310", { "text-anchor": "end", style: "fill:var(--a2);font-weight:600" });
+  txt(s, W - R, T, `Held-out half: top-3 average ${RS.l7_heldout.top3.toFixed(3)} vs best single ${RS.l7_heldout.best_single[1].toFixed(3)}`, { "text-anchor": "end", style: "fill:var(--a2);font-weight:600" });
 })();
 
 }
 if (document.querySelector("#figL1")) {
 /* ---------------- Lab 01 scatter */
 (() => {
-  const pts = [["DLinear", 3.0, 1.414, "nn"], ["N-BEATS interp.", 24.2, 1.229, "nn"], ["N-BEATS generic", 32.2, 1.225, "nn"], ["NHITS", 36.3, 1.193, "nn"], ["LightGBM (Day 1)", 1.8, 1.169, "gbm"]];
-  const W = 460, H = 260, L = 46, R = 16, T = 14, B = 34, s = mk("#figL1", W, H), x = lin(0, 40, L, W - R), y = lin(1.12, 1.45, H - B, T);
-  yAxis(s, y, [1.15, 1.25, 1.35, 1.45], L, W - R, v => v.toFixed(2));
+  const NM = { DLinear: "DLinear", NBEATS_interpretable: "N-BEATS interp.", NBEATS_generic: "N-BEATS generic", NHITS: "NHITS", LightGBM: "LightGBM (Day 1)" };
+  const pts = RS.l1.map(([m, t, r, f]) => [NM[m] || m, t, r, f]);
+  const rs = pts.map(p => p[2]), ylo = Math.floor(Math.min(...rs) * 20) / 20 - 0.02, yhi = Math.ceil(Math.max(...rs) * 20) / 20 + 0.02;
+  const W = 460, H = 260, L = 46, R = 16, T = 14, B = 34, s = mk("#figL1", W, H), x = lin(0, 40, L, W - R), y = lin(ylo, yhi, H - B, T);
+  yAxis(s, y, ticks(ylo, yhi, 4), L, W - R, v => v.toFixed(2));
   [0, 10, 20, 30, 40].forEach(v => txt(s, x(v), H - 16, v + " s", { "text-anchor": "middle" }));
   txt(s, (L + W) / 2, H - 2, "fit time (seconds) → · mean RMSSE ↓", { "text-anchor": "middle" });
   pts.forEach(([n, t, r, f]) => { el("circle", { cx: x(t), cy: y(r), r: 6, fill: css(FAM[f][0]) }, s); const off = { "NHITS": [8, 16, "end"], "N-BEATS interp.": [-8, 18, "end"], "N-BEATS generic": [-8, -10, "end"] }[n] || [8, -6, "start"]; txt(s, x(t) + off[0], y(r) + off[1], n, { "text-anchor": off[2], class: "t-ink" }); });
@@ -356,21 +364,22 @@ if (document.querySelector("#figL2")) {
 /* ---------------- Lab 02 */
 (() => {
   const W = 460, H = 260, s = mk("#figL2", W, H), L = 110, R = 50;
-  const sp = [["loss", .248], ["input_size", .058], ["mlp_units", .037], ["learning_rate", .026]];
+  const sp = RS.l2_spread, seed = RS.l2_seed;
   txt(s, 8, 16, "spread in validation RMSSE caused by each setting", { class: "t-ink t-b" });
-  const x = lin(0, .26, L, W - R);
+  const x = lin(0, Math.max(...sp.map(d => d[1])) * 1.05, L, W - R);
   sp.forEach(([n, v], i) => { const y0 = 28 + i * 26; txt(s, L - 8, y0 + 14, n, { "text-anchor": "end", class: "t-ink" }); el("rect", { x: L, y: y0 + 2, width: x(v) - L, height: 16, fill: css(i ? "a1" : "a2"), rx: 2 }, s); txt(s, x(v) + 5, y0 + 14, v.toFixed(3)); });
-  el("line", { x1: x(.0085), x2: x(.0085), y1: 26, y2: 134, stroke: css("ink"), "stroke-dasharray": "3 3" }, s); txt(s, x(.0085) + 4, 144, "seed noise 0.009");
+  el("line", { x1: x(seed), x2: x(seed), y1: 26, y2: 28 + sp.length * 26, stroke: css("ink"), "stroke-dasharray": "3 3" }, s); txt(s, x(seed) + 4, 38 + sp.length * 26, "seed noise " + seed.toFixed(3));
   txt(s, 8, 176, "cost vs gain", { class: "t-ink t-b" });
-  const cx = lin(0, 700, L, W - R);
-  [["default", 36, 1.193], ["tuned", 539, 1.174]].forEach(([n, c, r], i) => { const y0 = 188 + i * 30; txt(s, L - 8, y0 + 14, `${n} · ${r}`, { "text-anchor": "end", class: "t-ink" }); el("rect", { x: L, y: y0 + 2, width: cx(c) - L, height: 16, fill: css(i ? "a2" : "a1"), rx: 2 }, s); txt(s, cx(c) + 5, y0 + 14, c + " s"); });
+  const cost = RS.l2_cost, cx = lin(0, Math.max(...cost.map(c => c[1])) * 1.25, L, W - R);
+  cost.forEach(([n, c, r], i) => { const y0 = 188 + i * 30; txt(s, L - 8, y0 + 14, `${n} · ${r}`, { "text-anchor": "end", class: "t-ink" }); el("rect", { x: L, y: y0 + 2, width: cx(c) - L, height: 16, fill: css(i ? "a2" : "a1"), rx: 2 }, s); txt(s, cx(c) + 5, y0 + 14, fmt(c) + " s"); });
 })();
 
 }
 if (document.querySelector("#figL3")) {
 /* ---------------- Lab 03 lift */
 (() => {
-  const d = [["Raw data (upper bound)", .82, "muted"], ["LightGBMx", .55, "a3"], ["LightGBMx_mono", .48, "a3"], ["NHITSx", .39, "a1"]];
+  const LC = { raw: ["Raw data (upper bound)", "muted"], LightGBMx: ["LightGBMx", "a3"], LightGBMx_mono: ["LightGBMx_mono", "a3"], NHITSx: ["NHITSx", "a1"] };
+  const d = RS.l3_lift.map(([k, v]) => [LC[k][0], v, LC[k][1]]);
   const W = 460, H = 220, L = 160, R = 50, s = mk("#figL3", W, H), x = lin(0, .9, L, W - R);
   txt(s, 8, 16, "units lift when a promotion is switched on", { class: "t-ink t-b" });
   d.forEach(([n, v, c], i) => { const y0 = 34 + i * 40; txt(s, L - 8, y0 + 17, n, { "text-anchor": "end", class: "t-ink" }); el("rect", { x: L, y: y0 + 4, width: x(v) - L, height: 22, fill: css(c), rx: 2 }, s); txt(s, x(v) + 5, y0 + 19, "+" + Math.round(v * 100) + "%", { class: "t-ink t-b" }); });
@@ -380,17 +389,17 @@ if (document.querySelector("#figL3")) {
 if (document.querySelector("#figL3b")) {
 /* ---------------- Lab 03 covariates */
 (() => {
-  const d = [["mean RMSSE", 1.131, 1.153], ["median RMSSE", .623, .563], ["WAPE", .334, .269]];
-  const W = 460, H = 220, L = 100, R = 20, s = mk("#figL3b", W, H), x = lin(0, 1.8, L, W - R);
+  const a = RS.l3_cov.NHITS_noexog, b = RS.l3_cov.NHITSx, d = [["mean RMSSE", a[0], b[0]], ["median RMSSE", a[1], b[1]], ["WAPE", a[2], b[2]]];
+  const W = 460, H = 220, L = 100, R = 20, s = mk("#figL3b", W, H), x = lin(0, Math.max(...d.map(r => Math.max(r[1], r[2]))) * 1.6, L, W - R);
   d.forEach(([n, a, b], i) => { const y0 = 14 + i * 64; txt(s, L - 8, y0 + 26, n, { "text-anchor": "end", class: "t-ink" }); [[a, "a4", "no covariates"], [b, "a1", "NHITSx"]].forEach(([v, c, lab], j) => { el("rect", { x: L, y: y0 + j * 22, width: x(v) - L, height: 18, fill: css(c), rx: 2 }, s); txt(s, x(v) + 5, y0 + j * 22 + 13, v.toFixed(3) + " " + lab); }); });
 })();
 
 }
 if (document.querySelector("#l5Toggle")) {
 /* ---------------- Lab 05 */
-const L5 = { levels: ["total", "department", "class", "subclass", "item"], base: [.885, 1.086, 1.197, 1.429, 1.898], m: { BottomUp: [1.143, 1.073, 1.176, 1.411, 1.898], TopDown: [.885, 1.071, 1.206, 1.460, 2.089], "MinT-shrink": [1.103, 1.054, 1.169, 1.398, 1.897], "MinT-wls_struct": [1.059, 1.135, 1.439, 1.954, 4.912], "MinT-ols": [.887, 2.933, 4.478, 5.857, 10.892] } };
-const l5On = new Set(["BottomUp", "TopDown", "MinT-shrink"]);
-const L5C = { BottomUp: "a3", TopDown: "a4", "MinT-shrink": "a2", "MinT-wls_struct": "a5", "MinT-ols": "warn" };
+const L5 = RS.l5;
+const l5On = new Set(["BottomUp", "TopDown", "MinT-wls_var"]);
+const L5C = { BottomUp: "a3", TopDown: "a4", "MiddleOut(class)": "a1", "MinT-wls_var": "a2", "MinT-wls_struct": "a5", "MinT-ols": "warn" };
 $("#l5Toggle").innerHTML = Object.keys(L5.m).map(k => `<button aria-pressed="${l5On.has(k)}" data-v="${k}">${k}</button>`).join("");
 $("#l5Toggle").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { const k = b.dataset.v; l5On.has(k) ? l5On.delete(k) : l5On.add(k); b.setAttribute("aria-pressed", l5On.has(k)); drawL5(); }));
 function drawL5() {
@@ -410,7 +419,8 @@ drawL5();
 if (document.querySelector("#figL6")) {
 /* ---------------- Lab 06 */
 (() => {
-  const d = [["NHITS_MQ", .830, .966, "a1"], ["LGBM pooled conf.", .799, .932, "a3"], ["LGBM per-series conf.", .674, .744, "warn"], ["ETS per-series conf.", .683, .745, "warn"]];
+  const L6 = { NHITS_MQ: ["NHITS_MQ", "a1"], LightGBM_pooled: ["LGBM pooled conf.", "a3"], LightGBM_conf: ["LGBM per-series conf.", "warn"], ETS_conf: ["ETS per-series conf.", "warn"] };
+  const d = Object.keys(L6).map(k => [L6[k][0], RS.l6[k][0], RS.l6[k][1], L6[k][1]]);
   const W = 460, H = 240, L = 150, R = 16, T = 26, B = 30, s = mk("#figL6", W, H), x = lin(.6, 1, L, W - R);
   [.6, .7, .8, .9, 1].forEach(v => { el("line", { x1: x(v), x2: x(v), y1: T - 6, y2: H - B, class: "gl" }, s); txt(s, x(v), H - B + 14, Math.round(v * 100) + "%", { "text-anchor": "middle" }); });
   [[.8, "80 target"], [.95, "95 target"]].forEach(([v, n]) => { el("line", { x1: x(v), x2: x(v), y1: T - 6, y2: H - B, stroke: css("ink"), "stroke-dasharray": "4 3" }, s); txt(s, x(v), T - 10, n, { "text-anchor": "middle", class: "t-ink" }); });
@@ -422,13 +432,12 @@ if (document.querySelector("#figL6")) {
 if (document.querySelector("#figL7")) {
 /* ---------------- Lab 07 heatmap */
 (() => {
-  const models = ["NHITSx", "LightGBM", "NHITS_noexog", "LightGBMx", "LightGBMx_mono", "NHITS_MQ"];
-  const rows = [["smooth", [.639, .674, .686, .691, .694, .702], 1185], ["erratic", [.724, .783, .878, .885, .882, .908], 287], ["lumpy", [1.332, 1.512, 1.397, 1.556, 1.554, 1.388], 187], ["intermittent", [3.021, 2.823, 2.587, 2.853, 2.849, 2.623], 337]];
+  const models = RS.l7_types.models, rows = RS.l7_types.rows;
   const W = 460, H = 250, L = 96, T = 70, cw = (W - L - 40) / 6, ch = 40, s = mk("#figL7", W, H);
   models.forEach((m, j) => txt(s, L + j * cw + cw / 2, T - 8, m.replace("LightGBM", "LGBM").replace("NHITS_", "NHITS "), { "text-anchor": "start", transform: `rotate(-35 ${L + j * cw + cw / 2} ${T - 8})`, class: "t-ink" }));
   rows.forEach(([n, v, c], i) => {
     const mn = Math.min(...v), mx = Math.max(...v);
-    txt(s, L - 8, T + i * ch + 18, n, { "text-anchor": "end", class: "t-ink" }); txt(s, L - 8, T + i * ch + 31, "n=" + c, { "text-anchor": "end" });
+    txt(s, L - 8, T + i * ch + 18, n, { "text-anchor": "end", class: "t-ink" }); txt(s, L - 8, T + i * ch + 31, "n=" + fmt(c), { "text-anchor": "end" });
     v.forEach((val, j) => { const best = val === mn, k = (val - mn) / (mx - mn || 1); el("rect", { x: L + j * cw + 1, y: T + i * ch + 1, width: cw - 2, height: ch - 2, rx: 3, fill: best ? css("a3") : `color-mix(in srgb,var(--a2) ${Math.round(12 + 60 * k)}%,var(--panel))` }, s); txt(s, L + j * cw + cw / 2, T + i * ch + 25, val.toFixed(2), { "text-anchor": "middle", style: best ? "fill:var(--panel);font-weight:600" : "fill:var(--ink)" }); });
   });
 })();
@@ -437,8 +446,9 @@ if (document.querySelector("#figL7")) {
 if (document.querySelector("#figL7b")) {
 /* ---------------- Lab 07 slope chart */
 (() => {
-  const mean = [["NHITS_noexog", 1.101], ["NHITSx", 1.119], ["NHITS_MQ", 1.120], ["LightGBM", 1.131], ["NHITS_tuned", 1.142], ["NHITS", 1.159], ["LightGBMx", 1.165], ["LightGBMx_mono", 1.166], ["NBEATS_g", 1.188], ["NBEATS_i", 1.192]];
-  const bt = ["NHITSx", "LightGBM", "NHITS_noexog", "LightGBMx", "LightGBMx_mono", "NHITS_MQ", "NHITS_tuned", "NHITS", "NBEATS_g", "NBEATS_i"];
+  const SH = m => m.replace("NBEATS_generic", "NBEATS_g").replace("NBEATS_interpretable", "NBEATS_i");
+  const top = RS.l7_mean.filter(r => !/^(ETS|AutoETS|Naive|SeasonalNaive|DLinear)/.test(r[0])).slice(0, 10), keep = new Set(top.map(r => r[0]));
+  const mean = top.map(([m, v]) => [SH(m), v]), bt = RS.l7_bt.filter(r => keep.has(r[0])).map(r => SH(r[0]));
   const W = 900, H = 330, xl = 260, xr = 640, T = 40, rh = 28, s = mk("#figL7b", W, H);
   txt(s, xl, 18, "rank by mean RMSSE", { "text-anchor": "end", class: "t-ink t-b" }); txt(s, xr, 18, "rank by Bradley–Terry rating", { class: "t-ink t-b" });
   mean.forEach(([m, v], i) => { const j = bt.indexOf(m), hl = ["NHITSx", "LightGBM", "NHITS_noexog"].includes(m); const c = hl ? css({ NHITSx: "a1", LightGBM: "a3", NHITS_noexog: "a4" }[m]) : css("line");
