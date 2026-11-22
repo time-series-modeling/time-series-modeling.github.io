@@ -124,7 +124,7 @@ if (document.querySelector("#figGB")) {
 /* ---------------- N-BEATS */
 if (document.querySelector("#figNB")) {
   const r = rng(21), IN = 28, N = IN + HZ;
-  const truth = Array.from({ length: N }, (_, t) => 40 + 0.6 * t + 10 * Math.sin(2 * Math.PI * t / 13) + 3 * randn(r));
+  const truth = Array.from({ length: N }, (_, t) => 40 + 0.6 * t + 10 * Math.sin(2 * Math.PI * t / 14) + 3 * randn(r));
   const inp = truth.slice(0, IN);
   function lsq(X, yv) { // normal equations, small k
     const k = X[0].length, A = Array.from({ length: k }, () => Array(k + 1).fill(0));
@@ -134,7 +134,7 @@ if (document.querySelector("#figNB")) {
     return A.map((row, a) => row[k] / row[a]);
   }
   const tb = t => [1, t / N, (t / N) ** 2];
-  const sb = t => { const o = []; for (let k = 1; k <= 4; k++) o.push(Math.sin(2 * Math.PI * k * t / N), Math.cos(2 * Math.PI * k * t / N)); return o; };
+  const sb = t => { const o = []; for (let k = 1; k <= 4; k++) o.push(Math.sin(2 * Math.PI * k * t / HZ), Math.cos(2 * Math.PI * k * t / HZ)); return o; };
   const th1 = lsq(inp.map((_, t) => tb(t)), inp), b1 = t => tb(t).reduce((z, v, i) => z + v * th1[i], 0);
   const res1 = inp.map((v, t) => v - b1(t));
   const th2 = lsq(res1.map((_, t) => sb(t)), res1), b2 = t => sb(t).reduce((z, v, i) => z + v * th2[i], 0);
@@ -166,9 +166,12 @@ if (document.querySelector("#figNB")) {
 /* ---------------- NHITS multi-rate */
 if (document.querySelector("#figNHX")) {
   const IN = 28, y = SM.y.slice(TEST0 - IN, TEST0 + HZ), inp = y.slice(0, IN), fut = y.slice(IN);
-  const CFG = [{ pool: 2, knots: 4, col: "a1" }, { pool: 2, knots: 7, col: "a3" }, { pool: 1, knots: 14, col: "a2" }];
+  // neuralforecast defaults: n_pool_kernel_size = [2, 2, 1], n_freq_downsample = [4, 2, 1] -> knots = max(h // d, 1) = 3, 7, 14
+  const CFG = [{ pool: 2, knots: 3, col: "a1" }, { pool: 2, knots: 7, col: "a3" }, { pool: 1, knots: 14, col: "a2" }];
   let st = 0;
-  function interp(knots, n) { const k = knots.length; if (k === n) return knots.slice(); return Array.from({ length: n }, (_, t) => { const p = t * (k - 1) / (n - 1), i = Math.floor(p), f = p - i; return i >= k - 1 ? knots[k - 1] : knots[i] * (1 - f) + knots[i + 1] * f; }); }
+  // torch F.interpolate(mode="linear", align_corners=False), as in NHITS' _IdentityBasis
+  function interp(knots, n) { const k = knots.length; return Array.from({ length: n }, (_, t) => { const p = Math.max(0, (t + .5) * k / n - .5), i = Math.min(Math.floor(p), k - 1), j = Math.min(i + 1, k - 1), f = p - i; return knots[i] * (1 - f) + knots[j] * f; }); }
+  const kPos = (j, k) => (j + .5) * HZ / k - .5, at = p => { const i = Math.floor(p), f = p - i; return i + 1 < HZ ? fut[i] * (1 - f) + fut[i + 1] * f : fut[HZ - 1]; };
   function draw() {
     const c = CFG[st], W = 900, H = 260, L = 50, R = 12, T = 24, B = 26, s = mk("#figNHX", W, H);
     const x = lin(0, IN + HZ - 1, L, W - R), mx = Math.max(...y) * 1.1, yy = lin(0, mx, H - B, T);
@@ -177,10 +180,10 @@ if (document.querySelector("#figNHX")) {
     txt(s, x(2), 14, `input, max-pooled by ${c.pool}`, { class: "t-ink t-b" }); txt(s, x(IN + 1), 14, `forecast from ${c.knots} knots`, { class: "t-ink t-b" });
     el("path", { d: path(y.map((v, t) => [x(t), yy(v)])), fill: "none", stroke: css("muted"), "stroke-width": 1.2, opacity: .6 }, s);
     for (let i = 0; i < IN; i += c.pool) { const m = Math.max(...inp.slice(i, i + c.pool)); el("rect", { x: x(i) - 3, y: yy(m), width: x(i + c.pool) - x(i) - 1, height: 3, fill: css(c.col) }, s); }
-    const kn = Array.from({ length: c.knots }, (_, k) => fut[Math.round(k * (HZ - 1) / (c.knots - 1))]);
+    const kn = Array.from({ length: c.knots }, (_, k) => at(kPos(k, c.knots)));
     const curve = interp(kn, HZ);
     el("path", { d: path(curve.map((v, t) => [x(IN + t), yy(v)])), fill: "none", stroke: css(c.col), "stroke-width": 2.6 }, s);
-    kn.forEach((v, k) => el("circle", { cx: x(IN + Math.round(k * (HZ - 1) / (c.knots - 1))), cy: yy(v), r: 4.5, fill: css(c.col) }, s));
+    kn.forEach((v, k) => el("circle", { cx: x(IN + kPos(k, c.knots)), cy: yy(v), r: 4.5, fill: css(c.col) }, s));
     $("#nhxOut").innerHTML = `stack ${st + 1}: pool ${c.pool} · ${c.knots} knots for 14 weeks · the curve through the knots is as detailed as this stack can be (knots placed on the real future to show resolution)`;
   }
   draw(); seg("#nhxStack", v => { st = +v; draw(); });
@@ -214,13 +217,17 @@ if (document.querySelector("#figDL")) {
     el("path", { d: path(re.map((v, t) => [x(t), yy(v)])), fill: "none", stroke: css("a3"), "stroke-width": 1.6 }, s);
     el("path", { d: path(fc.map((v, t) => [x(IN + t), yy(v)])), fill: "none", stroke: css("a2"), "stroke-width": 2.6 }, s);
     txt(s, W - R, 12, "grey = actual · blue = trend (moving average) · green = remainder · orange = DLinear forecast", { "text-anchor": "end" });
-    // heatmaps
-    const W2 = 900, H2 = 170, s2 = mk("#figDLw", W2, H2), cw = (W2 / 2 - 40) / IN, ch = (H2 - 40) / HZ;
-    const mxw = Math.max(...Wm.flat().map(Math.abs)) || 1;
-    [["trend weights", 0, 20], ["remainder weights", IN, W2 / 2 + 20]].forEach(([name, off, x0]) => {
-      txt(s2, x0, 14, name + " (rows = forecast week, columns = input week)", { class: "t-ink" });
-      for (let h = 0; h < HZ; h++) for (let i = 0; i < IN; i++) { const v = Wm[h][off + i] / mxw; el("rect", { x: x0 + i * cw, y: 24 + h * ch, width: cw, height: ch, fill: v >= 0 ? `color-mix(in srgb,var(--a1) ${Math.round(Math.min(1, v * 1.6) * 100)}%,var(--panel))` : `color-mix(in srgb,var(--a2) ${Math.round(Math.min(1, -v * 1.6) * 100)}%,var(--panel))` }, s2); }
+    // heatmaps: the two learned matrices, and the single matrix they amount to (W_s + (W_t - W_s)·A, A = the moving average)
+    const A = Array.from({ length: IN }, (_, i) => Array(IN).fill(0)); for (let c = 0; c < IN; c++) { const e = Array(IN).fill(0); e[c] = 1; ma(e, k).forEach((v, r) => A[r][c] = v); }
+    const Wt = Wm.map(r => r.slice(0, IN)), Ws = Wm.map(r => r.slice(IN));
+    const Mx = Wt.map((rt, h) => Array.from({ length: IN }, (_, i) => Ws[h][i] + rt.reduce((z, v, j) => z + (v - Ws[h][j]) * A[j][i], 0)));
+    const W2 = 900, H2 = 180, s2 = mk("#figDLw", W2, H2), pw = (W2 - 40) / 3, cw = (pw - 20) / IN, ch = (H2 - 46) / HZ;
+    [["trend weights Wₜ", Wt, 0], ["remainder weights Wₛ", Ws, 1], ["= one combined 14 × 28 map", Mx, 2]].forEach(([name, M, j]) => {
+      const x0 = 10 + j * (pw + 10), mxw = Math.max(...M.flat().map(Math.abs)) || 1;
+      txt(s2, x0, 14, name, { class: "t-ink" });
+      for (let h = 0; h < HZ; h++) for (let i = 0; i < IN; i++) { const v = M[h][i] / mxw; el("rect", { x: x0 + i * cw, y: 24 + h * ch, width: cw, height: ch, fill: v >= 0 ? `color-mix(in srgb,var(--a1) ${Math.round(Math.min(1, v * 1.6) * 100)}%,var(--panel))` : `color-mix(in srgb,var(--a2) ${Math.round(Math.min(1, -v * 1.6) * 100)}%,var(--panel))` }, s2); }
     });
+    txt(s2, 10, H2 - 4, "rows = forecast week (top = week 1), columns = input week (right = most recent)");
     txt(s2, W2 - 12, H2 - 4, "blue = positive weight · orange = negative", { "text-anchor": "end" });
     $("#dlOut").innerHTML = `moving average over ${k} weeks · fitted on ${nWin} training windows · test MAE <b>${fmt(mae(fc, y.slice(TEST0, TEST0 + HZ)))}</b> units`;
   }
@@ -352,4 +359,196 @@ if (document.querySelector("#figTF")) {
   }
   draw(); seg("#tfStep", v => { st = +v; draw(); $("#tfCap").textContent = CAP[st]; }); $("#tfCap").textContent = CAP[0];
   $("#tfPlay").addEventListener("click", e => { const btns = [...$("#tfStep").querySelectorAll("button")]; animate(e.currentTarget, 240, f => { const k = Math.min(3, Math.floor(f / 60)); if (k !== st) { st = k; btns.forEach((b, i) => b.setAttribute("aria-pressed", i === k)); $("#tfCap").textContent = CAP[k]; } t0 = f; draw(); }); });
+}
+
+/* ================================================================ model internals
+   Architecture walkthroughs for N-BEATS, NHITS and DLinear. Shapes, layer sizes and bases follow
+   neuralforecast 3.2.2 with the Lab 01 settings: h = 14, input_size = 28, library defaults otherwise. */
+function arch(s, mid, nodes, edges, on) {
+  const lit = k => on === "all" || on.includes(k);
+  edges.forEach(e => {
+    const L = lit(e.id);
+    el("path", { d: "M" + e.p.map(p => p.join(",")).join("L"), fill: "none", stroke: L ? css(e.col || "ink") : css("line"), "stroke-width": L ? 1.8 : 1.2, "marker-end": e.noArrow ? "" : `url(#${mid})`, ...(e.dash ? { "stroke-dasharray": "4 3" } : {}) }, s);
+    if (e.label) txt(s, e.label[0], e.label[1], e.label[2], { "text-anchor": e.label[3] || "middle", opacity: L ? 1 : .35 });
+  });
+  nodes.forEach(n => {
+    const L = lit(n.id), col = n.col || "a1", g = el("g", { opacity: L ? 1 : .32 }, s);
+    if (n.op) {
+      el("circle", { cx: n.x, cy: n.y, r: 12, fill: css("panel"), stroke: L ? css(col) : css("line"), "stroke-width": 1.8 }, g);
+      txt(g, n.x, n.y + 5, n.op, { "text-anchor": "middle", class: "t-ink t-b", style: "font-size:15px" });
+      return;
+    }
+    el("rect", { x: n.x, y: n.y, width: n.w, height: n.h, rx: 8, fill: L && on !== "all" ? css("soft") : css("panel"), stroke: L ? css(col) : css("line"), "stroke-width": L ? 1.8 : 1.2 }, g);
+    const lh = 14, y0 = n.y + n.h / 2 - (n.lines.length - 1) * lh / 2 + 4;
+    n.lines.forEach((l, i) => txt(g, n.x + n.w / 2, y0 + i * lh, l, { "text-anchor": "middle", class: i === 0 ? "t-ink t-b" : "" }));
+  });
+}
+function arrowDefs(s, mid) { const m = el("marker", { id: mid, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, el("defs", {}, s)); el("path", { d: "M0,0L10,5L0,10z", fill: css("muted") }, m); }
+// residual stack (N-BEATS / NHITS): residual track on top, forecast track at the bottom, blocks in between
+function stackLayout(blocks, inLines, outLines) {
+  const yR = 56, yF = 258, bw = 152, x0s = 160, x1s = 770, sp = (x1s - x0s) / blocks.length, nodes = [], edges = [];
+  nodes.push({ id: "in", x: 8, y: yR - 24, w: 124, h: 48, lines: inLines });
+  nodes.push({ id: "naive", x: 8, y: yF - 24, w: 124, h: 48, lines: ["start: last observed", "week, repeated 14×"], col: "a2" });
+  let rx = 132, fx = 132;
+  blocks.forEach((b, i) => {
+    const x0 = x0s + i * sp + (sp - bw - 34) / 2, mx = x0 + bw + 26, px = x0 + bw / 2;
+    nodes.push({ id: "b" + i, x: x0, y: 108, w: bw, h: 96, lines: b, col: "a1" });
+    nodes.push({ id: "m" + i, x: mx, y: yR, op: "−", col: "a1" });
+    nodes.push({ id: "p" + i, x: px, y: yF, op: "+", col: "a2" });
+    edges.push({ id: "r" + i, p: [[rx, yR], [mx - 12, yR]] });
+    edges.push({ id: "b" + i, p: [[x0 + 24, yR], [x0 + 24, 108]] });
+    edges.push({ id: "b" + i, p: [[x0 + bw - 24, 108], [x0 + bw - 24, yR + 30], [mx, yR + 30], [mx, yR + 12]], col: "a1", label: [x0 + bw - 20, yR + 25, "backcast", "end"] });
+    edges.push({ id: "b" + i, p: [[px, 204], [px, yF - 12]], col: "a2", label: [px + 6, 232, "forecast", "start"] });
+    edges.push({ id: "f" + i, p: [[fx, yF], [px - 12, yF]], col: "a2" });
+    rx = mx + 12; fx = px + 12;
+  });
+  nodes.push({ id: "left", x: 790, y: yR - 24, w: 124, h: 48, lines: ["left over", "(nothing uses it)"], col: "muted" });
+  nodes.push({ id: "out", x: 790, y: yF - 24, w: 124, h: 48, lines: outLines, col: "a2" });
+  edges.push({ id: "left", p: [[rx, yR], [790, yR]] });
+  edges.push({ id: "out", p: [[fx, yF], [790, yF]], col: "a2" });
+  return { nodes, edges };
+}
+function stepper(fig, segId, capId, W, H, build, steps) {
+  let st = 0;
+  const draw = () => { const s = mk(fig, W, H), mid = fig.slice(1) + "-ah"; arrowDefs(s, mid); const { nodes, edges } = build(); arch(s, mid, nodes, edges, steps()[st].on); $(capId).innerHTML = steps()[st].cap; };
+  seg(segId, v => { st = +v; draw(); });
+  return { draw, reset: () => { st = 0; $(segId).querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0)); draw(); } };
+}
+const ids = (pre, n) => Array.from({ length: n }, (_, i) => pre + i);
+
+/* ---------------- N-BEATS: whole network */
+if (document.querySelector("#figNBarch")) {
+  let variant = "generic";
+  const BL = { generic: [["Block 1 · identity", "MLP → θ (42)", "28 back + 14 fwd"], ["Block 2 · identity", "MLP → θ (42)", "28 back + 14 fwd"], ["Block 3 · identity", "MLP → θ (42)", "28 back + 14 fwd"]], interpretable: [["Block 1 · trend", "MLP → θ (6)", "quadratic basis"], ["Block 2 · seasonality", "MLP → θ (52)", "13 cos/sin waves"]] };
+  const build = () => stackLayout(BL[variant], ["input window", "28 weeks, scaled"], ["forecast ŷ", "14 weeks"]);
+  const steps = () => {
+    const n = BL[variant].length, gen = variant === "generic";
+    return [
+      { on: "all", cap: gen ? "Generic N-BEATS as Lab 01 runs it: <code>stack_types=[\"identity\"]*3</code>, one block per stack, so three blocks in a row. Two tracks run through the network: the <b>residual</b> (top) shrinks as each block explains part of the input, the <b>forecast</b> (bottom) grows as each block adds its part." : "Interpretable N-BEATS as Lab 01 runs it: <code>stack_types=[\"trend\", \"seasonality\"]</code>, one block each. Same wiring as the generic model, but each block is forced to speak in a fixed vocabulary of shapes." },
+      { on: ["in", "naive"], cap: "Each training example is one window: 28 weeks of one series in, the next 14 weeks as the target. <code>scaler_type=\"robust\"</code> centres the window on its median and divides by its mean absolute deviation, so a 2-unit item and a 2,000-unit item look alike to the network. neuralforecast also reverses the window (most recent week first) and starts the forecast from the last observed value, so the blocks only learn corrections to a naive forecast. The 2020 paper has none of these three: it feeds the raw window and deliberately avoids input scaling." },
+      { on: ["b0", "r0"], cap: gen ? "Block 1 is an MLP: Linear 28 → 512, then three Linear 512 → 512 layers each followed by ReLU, then a Linear to θ. With the identity basis θ is the answer itself: the first 28 numbers are the backcast (its reconstruction of the input), the last 14 are its forecast. In the paper the generic block has one more learned linear layer after θ; two linear layers in a row act as one, so neuralforecast merges them." : "Block 1 (trend) has the same MLP, but θ has only 6 numbers: 3 coefficients for the backcast and 3 for the forecast. They multiply the polynomials 1, t, t² (see the block widget below), so whatever this block says is a smooth quadratic curve." },
+      { on: ["m0", "r1"], cap: "The <b>doubly residual</b> step: the backcast is subtracted from the input, and only what block 1 could not explain goes on. Block 1's forecast goes down to the forecast track. Neither track has any other connection: the next block never sees the raw input, only the leftover." },
+      { on: ids("b", n).slice(1).concat(ids("m", n).slice(1), ids("r", n).slice(1), ["left"]), cap: gen ? "Blocks 2 and 3 repeat the same pattern on what is left. Each has its own weights (<code>shared_weights=False</code>, as in the paper's generic model, which chains 30 such blocks). What is still left after the last block is thrown away: there is no loss on it, the backcast only exists to tell the next block what is already explained." : "Block 2 (seasonality) works on the input with the trend taken out, and can only answer with sums of cosine and sine waves. What is left after it is thrown away. The paper puts three blocks in each of the two stacks and shares their weights; the lab keeps one block per stack." },
+      { on: ["naive", "out"].concat(ids("p", n), ids("f", n)), cap: `Forecast = last observed value + the forecasts of all ${n} blocks, then unscaled. Only this sum is compared with the 14 real weeks (MAE loss), so every block is trained by how much its piece helps the final forecast.${gen ? "" : " Because each piece has a known shape, you can plot the trend part and the seasonal part separately."}` },
+    ];
+  };
+  const S = stepper("#figNBarch", "#nbaStep", "#nbaCap", 920, 290, build, steps);
+  seg("#nbaVar", v => { variant = v; S.reset(); });
+  S.draw();
+}
+
+/* ---------------- N-BEATS: inside one block, with the real bases */
+if (document.querySelector("#figNBblk")) {
+  const IN = 28, H = HZ, FREQ = [0, ...Array.from({ length: 12 }, (_, i) => 1 + i / 2)];
+  const trendB = len => [0, 1, 2].map(i => Array.from({ length: len }, (_, t) => Math.pow(t / len, i)));
+  const seasB = (len, sign) => [Math.cos, Math.sin].flatMap(fn => FREQ.map(f => Array.from({ length: len }, (_, t) => fn(sign * 2 * Math.PI * t / H * f))));
+  const B = { trend: { b: trendB(IN), f: trendB(H) }, seasonality: { b: seasB(IN, -1), f: seasB(H, 1) } };
+  const SPEC = {
+    generic: { nb: 28, nf: 14, gb: "identity (28 × 28)", gf: "identity (14 × 14)" },
+    trend: { nb: 3, nf: 3, gb: "1, t, t² over 28 wks", gf: "1, t, t² over 14 wks" },
+    seasonality: { nb: 26, nf: 26, gb: "13 cos + 13 sin", gf: "13 cos + 13 sin" },
+  };
+  let v = "generic", k = 1, seed = 7, theta = null;
+  function draw() {
+    const W = 920, Ht = 360, s = mk("#figNBblk", W, Ht), mid = "nbblk-ah"; arrowDefs(s, mid);
+    const sp = SPEC[v], nt = sp.nb + sp.nf;
+    const nodes = [
+      { id: "a", x: 8, y: 30, w: 112, h: 44, lines: ["residual in", "28 values"] },
+      { id: "a", x: 146, y: 30, w: 118, h: 44, lines: ["Linear", "28 → 512"] },
+      { id: "a", x: 290, y: 30, w: 168, h: 44, lines: ["3 × Linear 512 → 512", "each followed by ReLU"] },
+      { id: "a", x: 484, y: 30, w: 118, h: 44, lines: ["Linear", `512 → θ (${nt})`] },
+      { id: "a", x: 640, y: 4, w: 272, h: 40, lines: [`backcast = Gᵇ·θᵇ (θᵇ: ${sp.nb})`, `Gᵇ: ${sp.gb}`], col: "a1" },
+      { id: "a", x: 640, y: 62, w: 272, h: 40, lines: [`forecast = Gᶠ·θᶠ (θᶠ: ${sp.nf})`, `Gᶠ: ${sp.gf}`], col: "a2" },
+    ];
+    const edges = [{ id: "a", p: [[120, 52], [146, 52]] }, { id: "a", p: [[264, 52], [290, 52]] }, { id: "a", p: [[458, 52], [484, 52]] }, { id: "a", p: [[602, 52], [620, 52], [620, 24], [640, 24]] }, { id: "a", p: [[620, 52], [620, 82], [640, 82]] }];
+    arch(s, mid, nodes, edges, "all");
+    // plot: real time, 28 input weeks then 14 forecast weeks
+    const L = 50, R = 12, T = 132, Bm = 26, x = lin(0, IN + H - 1, L, W - R);
+    let curves = [], cols = [];
+    if (v === "trend") { curves = [0, 1, 2]; cols = ["a1", "a3", "a4"]; }
+    if (v === "seasonality") { curves = [k, FREQ.length + k]; cols = ["a1", "a3"]; }
+    const fcOf = th => v === "generic" ? { b: th.slice(0, IN), f: th.slice(IN) } : { b: B[v].b[0].map((_, t) => B[v].b.reduce((z, g, j) => z + g[t] * th[j], 0)), f: B[v].f[0].map((_, t) => B[v].f.reduce((z, g, j) => z + g[t] * th[sp.nb + j], 0)) };
+    const out = theta ? fcOf(theta) : null;
+    const vals = [-1.05, 1.05]; if (out) vals.push(...out.b, ...out.f);
+    const mn = Math.min(...vals) * 1.05, mx = Math.max(...vals) * 1.05, y = lin(mn, mx, Ht - Bm, T);
+    el("rect", { x: x(IN - .5), y: T, width: W - R - x(IN - .5), height: Ht - Bm - T, fill: css("soft") }, s);
+    el("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), class: "ax" }, s);
+    txt(s, L, T - 8, "input weeks (backcast basis Gᵇ; t = 0 is the most recent week, because the input is reversed)", { class: "t-ink" });
+    txt(s, x(IN) + 4, T + 14, "forecast weeks (Gᶠ)", { class: "t-ink" });
+    curves.forEach((c, i) => {
+      el("path", { d: path(B[v].b[c].map((g, t) => [x(IN - 1 - t), y(g)])), fill: "none", stroke: css(cols[i]), "stroke-width": 1.4 }, s);
+      el("path", { d: path(B[v].f[c].map((g, t) => [x(IN + t), y(g)])), fill: "none", stroke: css(cols[i]), "stroke-width": 1.4 }, s);
+    });
+    if (out) {
+      el("path", { d: path(out.b.map((g, t) => [x(IN - 1 - t), y(g)])), fill: "none", stroke: css("ink"), "stroke-width": 2.6 }, s);
+      el("path", { d: path(out.f.map((g, t) => [x(IN + t), y(g)])), fill: "none", stroke: css("a2"), "stroke-width": 2.6 }, s);
+    }
+    [0, 7, 14, 21].forEach(i => txt(s, x(i), Ht - 8, `t−${IN - 1 - i}`, { "text-anchor": "middle" }));
+    txt(s, x(IN - 1), Ht - 8, "now", { "text-anchor": "end" }); [IN + 6, IN + 13].forEach(i => txt(s, x(i), Ht - 8, `+${i - IN + 1}`, { "text-anchor": "middle" }));
+    let msg;
+    if (v === "generic") msg = "identity basis: θ is used as it is, 28 backcast values and 14 forecast values, no shape constraint";
+    else if (v === "trend") msg = "trend basis (blue 1, green t, purple t²), with t = week / 28 for the backcast and week / 14 for the forecast";
+    else msg = FREQ[k] === 0 ? "frequency 0: the constant term (its sine is all zeros)" : `frequency ${FREQ[k]} cycles per 14 weeks: blue cos and green sin repeat every <b>${fmt(14 / FREQ[k], 1)}</b> weeks`;
+    $("#nbbOut").innerHTML = msg + (out ? ` · thick lines: one random θ (black = backcast, orange = forecast)` : "");
+    $("#nbbK").parentElement.style.display = v === "seasonality" ? "" : "none";
+  }
+  seg("#nbbVar", val => { v = val; theta = null; draw(); });
+  $("#nbbK").addEventListener("input", e => { k = +e.target.value; draw(); });
+  $("#nbbRand").addEventListener("click", () => {
+    const r = rng(seed++), n = SPEC[v].nb + SPEC[v].nf;
+    if (v === "generic") { let a = 0; theta = Array.from({ length: n }, (_, i) => { if (i === IN) a = 0; a = .7 * a + .5 * randn(r); return a; }); }
+    else theta = Array.from({ length: n }, (_, j) => randn(r) * (v === "seasonality" ? .45 / (1 + (j % 13)) : .8));
+    draw();
+  });
+  draw();
+}
+
+/* ---------------- NHITS: whole network */
+if (document.querySelector("#figNHarch")) {
+  const ST = [{ k: 2, d: 4, kn: 3 }, { k: 2, d: 2, kn: 7 }, { k: 1, d: 1, kn: 14 }];
+  const build = () => stackLayout(ST.map((c, i) => [`Stack ${i + 1}`, c.k > 1 ? `MaxPool ${c.k}: 28 → ${28 / c.k}` : "no pooling: 28", `MLP → θ: 28 + ${c.kn} knots`, c.kn < 14 ? `interpolate ${c.kn} → 14` : "14 knots = 14 weeks"]), ["input window", "28 weeks, scaled"], ["forecast ŷ", "14 weeks"]);
+  const steps = () => [
+    { on: "all", cap: "NHITS with the neuralforecast defaults used in Labs 01–03: three stacks of one block each, wired exactly like generic N-BEATS (residual track on top, forecast track at the bottom). The differences are all inside the blocks: each one looks at a pooled input and predicts a few knots instead of every week." },
+    { on: ["in", "naive"], cap: "Same start as N-BEATS: one 28-week window, robust-scaled, reversed, and the forecast starts at the last observed value. The NHITSx variant also feeds price, promotion and discount (pooled the same way) and the static features into each MLP." },
+    { on: ["b0", "r0", "m0"], cap: "<b>Stack 1</b> (<code>n_pool_kernel_size=2</code>, <code>n_freq_downsample=4</code>): MaxPool1d with kernel 2 turns the 28 input weeks into 14 values (the larger week of each pair), so the MLP sees a coarser version of the window. It outputs θ = 28 backcast values + 14 // 4 = <b>3 knots</b>; linear interpolation stretches the 3 knots over the 14 weeks. (The paper defines the number of knots as ⌈r·H⌉ with an expressiveness ratio r, here 1/4, which would round up to 4; neuralforecast rounds down.) Three numbers can only draw a broad rise or fall: this stack is the low-frequency specialist." },
+    { on: ["b1", "r1", "m1"], cap: "<b>Stack 2</b> (pool 2, <code>n_freq_downsample=2</code>): it receives what stack 1 did not explain, again pooled to 14 values, and predicts 14 // 2 = <b>7 knots</b>, one every two weeks. Medium-frequency wiggles." },
+    { on: ["b2", "r2", "m2", "left"], cap: "<b>Stack 3</b> (pool 1, downsample 1): sees the raw residual (28 values) and predicts all <b>14 weeks</b> directly, like an N-BEATS identity block. Week-to-week detail goes here. In neuralforecast the backcast is always the full 28 values taken straight from θ and only the forecast is interpolated; the paper's equations write the backcast through the same interpolation." },
+    { on: ["naive", "out"].concat(ids("p", 3), ids("f", 3)), cap: "Forecast = last value + coarse curve + medium curve + fine curve. Because the coarse stacks have so few outputs, the sum is smoother than N-BEATS' unconstrained 14 values. NHITS_MQ keeps all of this and makes each knot five numbers (one per quantile), trained with the multi-quantile loss." },
+  ];
+  stepper("#figNHarch", "#nhaStep", "#nhaCap", 920, 290, build, steps).draw();
+}
+
+/* ---------------- DLinear: whole network */
+if (document.querySelector("#figDLarch")) {
+  const build = () => ({
+    nodes: [
+      { id: "in", x: 8, y: 95, w: 120, h: 46, lines: ["input window x", "28 weeks, scaled"] },
+      { id: "ma", x: 168, y: 20, w: 182, h: 50, lines: ["moving average, k = 25", "pad 12 each end, AvgPool1d"], col: "a1" },
+      { id: "tr", x: 376, y: 20, w: 112, h: 50, lines: ["trend", "28 values"], col: "a1" },
+      { id: "re", x: 376, y: 166, w: 112, h: 50, lines: ["remainder", "x − trend, 28"], col: "a3" },
+      { id: "lt", x: 528, y: 20, w: 160, h: 50, lines: ["Linear_trend", "28 → 14 · 406 weights"], col: "a1" },
+      { id: "ls", x: 528, y: 166, w: 160, h: 50, lines: ["Linear_season", "28 → 14 · 406 weights"], col: "a3" },
+      { id: "pl", x: 740, y: 118, op: "+", col: "a2" },
+      { id: "out", x: 792, y: 95, w: 122, h: 46, lines: ["forecast ŷ", "14 weeks"], col: "a2" },
+    ],
+    edges: [
+      { id: "ma", p: [[128, 118], [148, 118], [148, 45], [168, 45]] },
+      { id: "re", p: [[148, 118], [148, 191], [376, 191]], label: [260, 185, "x"] },
+      { id: "tr", p: [[350, 45], [376, 45]] },
+      { id: "re", p: [[432, 70], [432, 166]], dash: true, label: [438, 122, "− trend", "start"] },
+      { id: "lt", p: [[488, 45], [528, 45]] },
+      { id: "ls", p: [[488, 191], [528, 191]] },
+      { id: "pl", p: [[688, 45], [740, 45], [740, 106]], col: "a2" },
+      { id: "pl", p: [[688, 191], [740, 191], [740, 130]], col: "a2" },
+      { id: "out", p: [[752, 118], [792, 118]], col: "a2" },
+    ],
+  });
+  const steps = () => [
+    { on: "all", cap: "DLinear as Lab 01 runs it (neuralforecast defaults, <code>moving_avg_window=25</code>). That is the whole model: one fixed smoothing step and two linear layers, 812 trainable numbers in total (2 × 28 × 14 weights, which is the paper's 2·T·L, plus 28 biases) against about 2.4 million in NHITS." },
+    { on: ["in", "ma", "tr", "re"], cap: "<b>Decompose.</b> The 28-week window is padded with 12 copies of its first value at the front and 12 of its last value at the end, then averaged over a sliding window of 25 weeks (stride 1), giving a 28-value trend. The remainder (the paper calls it the seasonal component) is the input minus that trend. Nothing here is learned. The paper takes k = 25 from Autoformer and uses windows of 336 steps; on our 28-week window a 25-week average is almost flat, and because of the padding its two ends lean on the first and last value (13 of the 25 terms at the edge)." },
+    { on: ["lt", "ls"], cap: "<b>Two linear layers.</b> The trend goes through <code>Linear_trend</code> and the remainder through <code>Linear_season</code>: each is a 14 × 28 weight matrix plus 14 biases (the paper writes the layer without a bias, X̂ = W·X). Row h of a matrix says how much each input week contributes to forecast week h. No hidden layer, no activation." },
+    { on: ["pl", "out"], cap: "<b>Add.</b> The two 14-week outputs are summed and unscaled. Unlike N-BEATS and NHITS there is no residual track and no naive starting point: the linear layers must produce the level themselves." },
+    { on: "all", cap: "<b>One matrix in disguise.</b> The moving average is a fixed 28 × 28 matrix A, so ŷ = W<sub>t</sub>·A·x + W<sub>s</sub>·(x − A·x) + b = (W<sub>s</sub> + (W<sub>t</sub> − W<sub>s</sub>)·A)·x + b. DLinear is a single 14 × 28 linear map of the (scaled) window. The split only changes how that map is parameterised and learned, which is why it is a good test of how much the deep models' non-linearity is worth here." },
+  ];
+  stepper("#figDLarch", "#dlaStep", "#dlaCap", 920, 236, build, steps).draw();
 }

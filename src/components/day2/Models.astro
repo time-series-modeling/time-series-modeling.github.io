@@ -8,6 +8,8 @@ const nh = ['NHITS', 'NHITS_tuned', 'NHITSx', 'NHITS_MQ'].map(m => lb[m]);
 const lift = Object.fromEntries(R.l3_lift);
 const pct = (v: number) => '+' + Math.round(100 * v) + ' %';
 const lgbSec = R.l1.find((r: any[]) => r[0] === 'LightGBM')[1];
+const sec = Object.fromEntries(R.l1.map((r: any[]) => [r[0], r[1]]));
+const s1 = (m: string) => Math.round(sec[m]) + ' s';
 ---
 <section class="d2 part">
   <div class="plate">
@@ -20,9 +22,9 @@ const lgbSec = R.l1.find((r: any[]) => r[0] === 'LightGBM')[1];
           <tr><td><a href="#m-baselines">Naive, SeasonalNaive</a></td><td>rule</td><td>one series</td><td>no</td><td>point</td><td>00</td><td>{r3('Naive', 'SeasonalNaive')}</td></tr>
           <tr><td><a href="#m-ets">AutoETS</a></td><td>statistical, local</td><td>one series</td><td>no</td><td>point (+ intervals)</td><td>00, 05</td><td>{r3('AutoETS')}</td></tr>
           <tr><td><a href="#m-gbm">LightGBM, LightGBMx, _mono</a></td><td>gradient-boosted trees, global</td><td>all series</td><td>x / mono only</td><td>point</td><td>00, 03</td><td>{r3('LightGBM', 'LightGBMx', 'LightGBMx_mono')}</td></tr>
-          <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('NBEATS_generic', 'NBEATS_interpretable')}</td></tr>
-          <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>{Math.min(...nh).toFixed(3)}–{Math.max(...nh).toFixed(3)}</td></tr>
-          <tr><td><a href="#m-dlinear">DLinear</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('DLinear')}</td></tr>
+          <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a> · <a href="#m-nbeats-inside">inside</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('NBEATS_generic', 'NBEATS_interpretable')}</td></tr>
+          <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a> · <a href="#m-nhits-inside">inside</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>{Math.min(...nh).toFixed(3)}–{Math.max(...nh).toFixed(3)}</td></tr>
+          <tr><td><a href="#m-dlinear">DLinear</a> · <a href="#m-dlinear-inside">inside</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('DLinear')}</td></tr>
           <tr><td><a href="#m-cov">How covariates enter (x models)</a></td><td colspan="6">price index, promotion flag and discount depth as known future inputs; static series features</td></tr>
           <tr><td><a href="#m-chronos">Chronos-2 (via timecopilot)</a></td><td>pretrained transformer</td><td>millions of other series, then optionally ours</td><td>in context</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
           <tr><td><a href="#m-timesfm">TimesFM 2.5 (via timecopilot)</a></td><td>pretrained decoder-only transformer</td><td>a large corpus of other series</td><td>no (zero-shot on sales)</td><td>quantiles</td><td>04</td><td>not run yet</td></tr>
@@ -78,8 +80,52 @@ const lgbSec = R.l1.find((r: any[]) => r[0] === 'LightGBM')[1];
     <h3>N-BEATS: explain, subtract, pass on</h3>
     <div class="ctrl"><div class="seg" id="nbStep"><button aria-pressed="true" data-v="0">Input</button><button aria-pressed="false" data-v="1">Block 1: trend</button><button aria-pressed="false" data-v="2">Block 2: seasonality</button><button aria-pressed="false" data-v="3">Sum = forecast</button></div><button class="btn" id="nbPlay">▶ Play</button></div>
     <div class="fig" id="figNB"></div>
-    <p class="cap">Interpretable N-BEATS on a synthetic series (trend + a 13-week cycle + noise), input 28 weeks, horizon 14, as in Lab 01. Left: what each block still has to explain. Right: the forecast building up.</p>
-    <p class="take">Each block reads the input, outputs a <b>backcast</b> (the part of the input it can explain) and a <b>forecast</b>. The backcast is subtracted and the rest goes to the next block; the forecasts add up. The interpretable version forces block 1 to be a low-degree polynomial and block 2 a set of sine waves; the generic version learns its own shapes and scored about the same ({r3('NBEATS_generic', 'NBEATS_interpretable').replace(', ', ' vs ')}). The sine waves only fit within input + horizon (42 weeks), so it cannot represent a 52-week year.</p>
+    <p class="cap">Interpretable N-BEATS on a synthetic series (trend + a 14-week cycle + noise), input 28 weeks, horizon 14, as in Lab 01. Left: what each block still has to explain. Right: the forecast building up. An illustration: here each block is a least-squares fit whose curve simply continues into the horizon; in the real network an MLP outputs separate backcast and forecast coefficients (see <a class="text-primary-600 hover:underline" href="#m-nbeats-inside">Inside N-BEATS</a>).</p>
+    <p class="take">Each block reads the input, outputs a <b>backcast</b> (the part of the input it can explain) and a <b>forecast</b>. The backcast is subtracted and the rest goes to the next block; the forecasts add up. The interpretable version forces block 1 to be a low-degree polynomial and block 2 a set of sine waves; the generic version learns its own shapes and scored about the same ({r3('NBEATS_generic', 'NBEATS_interpretable').replace(', ', ' vs ')}). The slowest seasonal wave repeats once per horizon (14 weeks), so it cannot represent a 52-week year.</p>
+  </div>
+
+  <div class="plate" id="m-nbeats-inside">
+    <h3>Inside N-BEATS: blocks, two residual tracks, and a basis for every output</h3>
+    <p>N-BEATS is a chain of fully connected blocks. Its one idea is that every block answers two questions about the input window: <b>what part of the past do I explain</b> (the backcast) and <b>what do I predict for the future</b> (the forecast). Step through the network as Lab 01 builds it (<code>input_size=28</code>, <code>h=14</code>, neuralforecast defaults otherwise). Source: Oreshkin, Carpov, Chapados and Bengio, <a class="text-primary-600 hover:underline" href="https://arxiv.org/abs/1905.10437">N-BEATS: Neural basis expansion analysis for interpretable time series forecasting</a>, ICLR 2020. Where neuralforecast differs from the paper, the text says so, and the table at the end of this section lists the differences.</p>
+    <div class="ctrl"><div class="seg" id="nbaVar"><button aria-pressed="true" data-v="generic">Generic (3 identity blocks)</button><button aria-pressed="false" data-v="interpretable">Interpretable (trend + seasonality)</button></div></div>
+    <div class="ctrl"><div class="seg" id="nbaStep"><button aria-pressed="true" data-v="0">Whole network</button><button aria-pressed="false" data-v="1">1 · Window in</button><button aria-pressed="false" data-v="2">2 · Block 1</button><button aria-pressed="false" data-v="3">3 · Subtract backcast</button><button aria-pressed="false" data-v="4">4 · Later blocks</button><button aria-pressed="false" data-v="5">5 · Sum forecasts</button></div></div>
+    <div class="fig wide" id="figNBarch"></div>
+    <p class="stepcap" id="nbaCap"></p>
+
+    <h3 class="mt-4">One block, and what θ means</h3>
+    <p>Every block has the same MLP. Only its last step differs: the MLP outputs a vector θ, which is split into backcast coefficients θᵇ and forecast coefficients θᶠ (the paper's “expansion coefficients”) and multiplied by a fixed <b>basis</b> matrix G (the paper's g<sup>b</sup> and g<sup>f</sup>). The basis decides what shapes the block is allowed to draw. Pick a block type and press <i>Random θ</i> to see one possible output.</p>
+    <div class="ctrl"><div class="seg" id="nbbVar"><button aria-pressed="true" data-v="generic">identity</button><button aria-pressed="false" data-v="trend">trend</button><button aria-pressed="false" data-v="seasonality">seasonality</button></div><label>Frequency <input type="range" id="nbbK" min="0" max="12" value="1"></label><button class="btn" id="nbbRand">Random θ</button></div>
+    <div class="fig wide" id="figNBblk"></div>
+    <div class="readout" id="nbbOut"></div>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th>Block type</th><th>θ size (back + fwd)</th><th>Basis G</th><th>Weights per block</th></tr></thead>
+        <tbody>
+          <tr><td>identity (generic)</td><td>28 + 14 = 42</td><td>none: θ is the 28 backcast and 14 forecast values (the paper: a learned linear layer)</td><td>824,362</td></tr>
+          <tr><td>trend</td><td>3 + 3 = 6</td><td>polynomials 1, t, t² (<code>basis="polynomial"</code>, <code>n_basis=2</code>), t = week / 28 behind, week / 14 ahead (the paper's T-degree is also 2)</td><td>805,894</td></tr>
+          <tr><td>seasonality</td><td>26 + 26 = 52</td><td>cos and sin at 13 frequencies, 0, 1, 1.5 … 6.5 cycles per 14 weeks (<code>n_harmonics=2</code>): periods from 14 down to 2.15 weeks. The paper's Fourier basis has only the whole frequencies 0 to 6: 7 cos + 7 sin</td><td>829,492</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">Every block: Linear 28 → 512, then 3 × (Linear 512 → 512, ReLU), then Linear 512 → θ, which is what <code>mlp_units=3*[[512, 512]]</code> builds in neuralforecast 3.2.2 (the paper: four fully connected layers, each with ReLU, then two separate linear layers for θᵇ and θᶠ). Almost all weights sit in the three 512 × 512 layers. Totals: generic 2,473,086 weights, interpretable 1,635,386, counted from the models as built by the library. Training: MAE loss, Adam at 1e-3 halved every 166 steps, 500 steps, each on 32 series and up to 1,024 windows sampled from them. Fit time on all 17,241 series: {s1('NBEATS_generic')} generic, {s1('NBEATS_interpretable')} interpretable.</p>
+
+    <h3 class="mt-4">The paper and the lab side by side</h3>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th></th><th>Paper (Oreshkin et al., 2020)</th><th>Lab 01 (neuralforecast 3.2.2)</th></tr></thead>
+        <tbody>
+          <tr><td>Generic model</td><td>30 stacks of 1 block, width 512, no weight sharing</td><td>3 stacks of 1 block, width 512, no weight sharing</td></tr>
+          <tr><td>Interpretable model</td><td>trend stack then seasonality stack, 3 blocks each, weights shared within a stack; width 256 (trend) and 2048 (seasonality)</td><td>one trend block then one seasonality block, width 512</td></tr>
+          <tr><td>Wiring</td><td colspan="2">the same: x<sub>ℓ</sub> = x<sub>ℓ−1</sub> − backcast<sub>ℓ−1</sub>, forecast = sum of all block forecasts</td></tr>
+          <tr><td>Seasonality basis</td><td>cos and sin at whole frequencies 0 … ⌊H/2 − 1⌋ per horizon</td><td>half-step frequencies too (<code>n_harmonics=2</code>)</td></tr>
+          <tr><td>Input window</td><td>2H to 7H, raw: “should not rely on … input scaling”</td><td>2H = 28 weeks, robust-scaled per window, reversed</td></tr>
+          <tr><td>Forecast</td><td>the sum of the block forecasts</td><td>the last observed value plus that sum</td></tr>
+          <tr><td>Training</td><td>Adam at 1e-3, batches of 1,024 windows, early stopping; sMAPE, MASE and MAPE losses; median of an ensemble of 180 models</td><td>one model, MAE loss, 500 steps</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="take">Things worth noticing. (1) θᵇ and θᶠ are separate outputs, so a block's forecast need not continue its backcast; the network learns to make them agree only because that lowers the loss. (2) The interpretable model has a third fewer weights and a hard shape constraint, yet scored the same as the generic one, as the two ensembles also did in the paper on M4 (sMAPE 11.168 generic, 11.174 interpretable). Here they scored {r3('NBEATS_generic', 'NBEATS_interpretable').replace(', ', ' and ')}: on 14-week horizons of noisy weekly sales the constraint neither helps nor hurts. (3) Nothing in the basis can draw a yearly pattern, and a 28-week window cannot see one anyway.</p>
+    <p class="cap"><b>To discuss:</b> what would you expect if the trend block came second instead of first? Why does the leftover after the last block get no loss at all?</p>
   </div>
 
   <div class="plate" id="m-nhits">
@@ -88,17 +134,90 @@ const lgbSec = R.l1.find((r: any[]) => r[0] === 'LightGBM')[1];
     <div class="fig" id="figNHX"></div>
     <div class="readout" id="nhxOut"></div>
     <p class="cap">Real series (the smooth example): 28-week input, 14-week horizon. Pooling sizes and knot counts are the NHITS defaults for this horizon.</p>
-    <p class="take">Like N-BEATS, but each stack first max-pools its input (sees a blurred version) and predicts only a few knots that are interpolated across the horizon. Stack 1 pools by 2 and predicts 4 knots, stack 2 pools by 2 and predicts 7, stack 3 sees the raw input and predicts all 14: coarse shape first, weekly detail last. Fewer outputs per stack means fewer parameters and smoother forecasts. <b>NHITS_MQ</b> keeps the network but outputs five numbers per week (median and 80 / 95 % bounds), trained with the pinball loss.</p>
+    <p class="take">Like N-BEATS, but each stack first max-pools its input (sees a blurred version) and predicts only a few knots that are interpolated across the horizon. Stack 1 pools by 2 and predicts 3 knots, stack 2 pools by 2 and predicts 7, stack 3 sees the raw input and predicts all 14: coarse shape first, weekly detail last. Fewer outputs per stack means fewer parameters and smoother forecasts. <b>NHITS_MQ</b> keeps the network but outputs five numbers per week (median and 80 / 95 % bounds), trained with the pinball loss.</p>
+  </div>
+
+  <div class="plate" id="m-nhits-inside">
+    <h3>Inside NHITS: N-BEATS with pooled inputs and interpolated outputs</h3>
+    <p>NHITS keeps N-BEATS' wiring (blocks, backcast subtracted on one track, forecasts summed on the other) and changes two things inside each block: the input is <b>max-pooled</b> before the MLP, and the forecast is a handful of <b>knots</b> that are linearly interpolated to 14 weeks. Each stack gets a different pooling size and number of knots, so the stacks split the forecast by frequency: coarse first, fine last. Settings below are the neuralforecast defaults used in Labs 01–03. Source: Challu, Olivares, Oreshkin, Garza, Mergenthaler-Canseco and Dubrawski, <a class="text-primary-600 hover:underline" href="https://arxiv.org/abs/2201.12886">N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting</a>, AAAI 2023. The paper calls the two ideas <b>multi-rate signal sampling</b> and <b>hierarchical interpolation</b>.</p>
+    <div class="ctrl"><div class="seg" id="nhaStep"><button aria-pressed="true" data-v="0">Whole network</button><button aria-pressed="false" data-v="1">1 · Window in</button><button aria-pressed="false" data-v="2">2 · Stack 1</button><button aria-pressed="false" data-v="3">3 · Stack 2</button><button aria-pressed="false" data-v="4">4 · Stack 3</button><button aria-pressed="false" data-v="5">5 · Sum</button></div></div>
+    <div class="fig wide" id="figNHarch"></div>
+    <p class="stepcap" id="nhaCap"></p>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th>Stack</th><th><code>n_pool_kernel_size</code></th><th>MLP input</th><th><code>n_freq_downsample</code></th><th>Forecast knots = max(14 // d, 1)</th><th>θ size</th><th>Weights</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>2</td><td>14 (28 pooled by 2)</td><td>4</td><td>3</td><td>28 + 3 = 31</td><td>811,551</td></tr>
+          <tr><td>2</td><td>2</td><td>14</td><td>2</td><td>7</td><td>28 + 7 = 35</td><td>813,603</td></tr>
+          <tr><td>3</td><td>1</td><td>28</td><td>1</td><td>14</td><td>28 + 14 = 42</td><td>824,362</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">MLP per block as in N-BEATS (Linear → 512, 3 × [Linear 512 → 512, ReLU], Linear → θ). <code>pooling_mode="MaxPool1d"</code>, <code>interpolation_mode="linear"</code>. Total 2,449,516 weights, counted from the model as built by the library; training as for N-BEATS. <code>n_freq_downsample</code> is the inverse of the paper's expressiveness ratio r. In NHITSx each block's MLP input also gets the pooled covariates (over input and horizon weeks) and the static features. The <a class="text-primary-600 hover:underline" href="#m-nhits">widget above</a> shows what 3, 7 and 14 knots can draw over a real 14-week future.</p>
+
+    <h3 class="mt-4">The paper and the lab side by side</h3>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th></th><th>Paper (Challu et al., 2023)</th><th>Labs 01–03 (neuralforecast 3.2.2)</th></tr></thead>
+        <tbody>
+          <tr><td>Built for</td><td>long horizons: 96 to 720 steps (24 to 60 for the weekly ILI data)</td><td>14 weeks</td></tr>
+          <tr><td>Stacks × blocks</td><td>3 × 1 in the reported search space</td><td>3 × 1</td></tr>
+          <tr><td>Pooling kernels k</td><td>one of [2,2,2], [4,4,4], [8,8,8], [8,4,1], [16,8,1]</td><td>[2, 2, 1]</td></tr>
+          <tr><td>Knots per stack</td><td>⌈r·H⌉, with 1/r from sets such as [24,12,1] or [168,24,1], matched to known cycles or growing exponentially</td><td>max(H // d, 1) with d = [4, 2, 1]: 3, 7, 14</td></tr>
+          <tr><td>Interpolation</td><td>linear (nearest and cubic tested in the ablations; MaxPool beat AveragePool)</td><td>linear, MaxPool</td></tr>
+          <tr><td>Backcast</td><td>written through the same interpolation as the forecast</td><td>28 values straight from θ</td></tr>
+          <tr><td>Input window</td><td>5H, data standardised with the training mean and standard deviation</td><td>2H = 28 weeks, robust-scaled per window</td></tr>
+          <tr><td>Training</td><td>Adam at 1e-3 halved three times, MAE loss, batch 256, 1,000 steps</td><td>Adam at 1e-3 halved every 166 steps, MAE loss, 500 steps</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="take">The paper's argument: pooling removes fine detail from what the first stacks see (larger kernels cut more of the high-frequency content), and a small number of knots forces those stacks to give a smooth answer, so each stack ends up specialising in its own frequency band. The fine stack only has to fix what is left. The model was designed for horizons of hundreds of steps, where the paper reports almost 20 % better accuracy than the transformer models of the time with about 50 times less computation time. At h = 14 with kernels of 2 both effects are mild: the weight saving is tiny (2.45 M against 2.47 M for generic N-BEATS), and whether the smoother forecast explains the small gain below is not something this run can tell. Default NHITS scored {r3('NHITS')} against {r3('NBEATS_generic')} for generic N-BEATS, at the same cost ({s1('NHITS')}). Lab 02 then tunes the window length, learning rate, scaler and number of steps, and Lab 03 adds covariates (NHITSx, {r3('NHITSx')}).</p>
+    <p class="cap"><b>To discuss:</b> stack 1's 3 knots sit at weeks 2.8, 7.5 and 12.2 of the horizon. What kind of pattern can it never produce? What would <code>n_freq_downsample=[7, 2, 1]</code> change?</p>
   </div>
 
   <div class="plate" id="m-dlinear">
     <h3>DLinear: split into trend and remainder, then one straight line each</h3>
-    <div class="ctrl"><label>Moving-average window <input type="range" id="dlK" min="3" max="25" value="13" step="2"></label></div>
+    <div class="ctrl"><label>Moving-average window <input type="range" id="dlK" min="3" max="25" value="25" step="2"></label></div>
     <div class="fig" id="figDL"></div>
     <div class="fig" id="figDLw"></div>
     <div class="readout" id="dlOut"></div>
-    <p class="cap">Fitted live in your browser on the smooth example series alone (ridge regression on its training windows). In the lab DLinear is global, trained on all series.</p>
-    <p class="take">A moving average splits the 28-week input into a smooth trend and the remainder. Each part goes through one linear layer (a 14 × 28 weight matrix, shown as heat maps) and the two outputs are added. No hidden layers at all: a useful check on how much the deep models really add. Here it scored worst of the neural group ({r3('DLinear')}).</p>
+    <p class="cap">Fitted live in your browser on the smooth example series alone (ridge regression on its training windows). In the lab DLinear is global, trained on all series, with the default window of 25 weeks (where the slider starts). The third heat map is the single matrix the two layers add up to (see <a class="text-primary-600 hover:underline" href="#m-dlinear-inside">Inside DLinear</a>).</p>
+    <p class="take">A moving average splits the 28-week input into a smooth trend and the remainder. Each part goes through one linear layer (a 14 × 28 weight matrix, shown as the first two heat maps) and the two outputs are added. No hidden layers at all: a useful check on how much the deep models really add. Here it scored worst of the neural group ({r3('DLinear')}).</p>
+  </div>
+
+  <div class="plate" id="m-dlinear-inside">
+    <h3>Inside DLinear: a fixed decomposition and two weight matrices</h3>
+    <p>DLinear comes from Zeng, Chen, Zhang and Xu, <a class="text-primary-600 hover:underline" href="https://arxiv.org/abs/2205.13504">Are Transformers Effective for Time Series Forecasting?</a>, AAAI 2023. The paper tested the transformer models for long-term forecasting against “embarrassingly simple” one-layer linear models (LTSF-Linear) and found the linear models ahead on nine benchmarks, in most cases by 20 to 50 % against the strongest transformer (FEDformer). DLinear is one of them: split the window into a smooth trend and a remainder, map each to the horizon with one linear layer, add. No hidden layers at all. Step through it with the Lab 01 settings.</p>
+    <div class="ctrl"><div class="seg" id="dlaStep"><button aria-pressed="true" data-v="0">Whole network</button><button aria-pressed="false" data-v="1">1 · Decompose</button><button aria-pressed="false" data-v="2">2 · Two linear layers</button><button aria-pressed="false" data-v="3">3 · Add</button><button aria-pressed="false" data-v="4">4 · One matrix</button></div></div>
+    <div class="fig wide" id="figDLarch"></div>
+    <p class="stepcap" id="dlaCap"></p>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th>Part</th><th>What it does</th><th>Learned?</th><th>Weights</th></tr></thead>
+        <tbody>
+          <tr><td>Moving average</td><td>edge-pad 12 weeks each side, <code>AvgPool1d(kernel_size=25, stride=1)</code></td><td>no</td><td>0</td></tr>
+          <tr><td><code>Linear_trend</code></td><td>trend (28) → 14</td><td>yes</td><td>28 × 14 + 14 = 406</td></tr>
+          <tr><td><code>Linear_season</code></td><td>remainder (28) → 14</td><td>yes</td><td>406</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">neuralforecast defaults: <code>moving_avg_window=25</code> (must be odd), MAE loss, Adam at 1e-4 with no decay (the other two models start at 1e-3), 500 steps as in the lab. Fit time {s1('DLinear')} on all 17,241 series. The robust scaler is applied around the model, so the forecast is linear in the scaled window, not in raw units.</p>
+
+    <h3 class="mt-4">The paper and the lab side by side</h3>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th></th><th>Paper (Zeng et al., 2023)</th><th>Lab 01 (neuralforecast 3.2.2)</th></tr></thead>
+        <tbody>
+          <tr><td>Decomposition</td><td>moving-average kernel of 25, taken from Autoformer; trend and “remainder (seasonal)” component</td><td>the same, <code>moving_avg_window=25</code></td></tr>
+          <tr><td>Layers</td><td>two one-layer linear maps, outputs summed; 2·T·L weights</td><td>the same, with biases: 812 weights</td></tr>
+          <tr><td>Look-back window L</td><td>336 steps by default; “will be underfitting when the input length is short”</td><td>28 weeks</td></tr>
+          <tr><td>Horizon T</td><td>96 to 720 steps (24 to 60 for the weekly ILI data)</td><td>14 weeks</td></tr>
+          <tr><td>Series</td><td>multivariate benchmark sets; one set of weights shared across the variates</td><td>17,241 item series; one set of weights shared across them</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="take">DLinear is the honest baseline for the deep models: same windows, same scaling, same loss, but only a linear map. It scored {r3('DLinear')}, clearly behind NHITS ({r3('NHITS')}) and N-BEATS ({r3('NBEATS_generic')}). Two cautions before reading that gap as “depth wins”. The paper itself says the linear models underfit on short inputs and are meant as a simple, competitive baseline with limited capacity; our 28-week window is far from its 336 steps. And the run is not a controlled comparison: DLinear's default learning rate is ten times lower with the same 500 steps, so it may also be under-trained.</p>
+    <p class="cap"><b>To discuss:</b> with a 25-week average on a 28-week window, how different are the trend and the window mean? Since the whole model is one 14 × 28 matrix, what does the decomposition change at all?</p>
   </div>
 
   <div class="plate" id="m-cov">
