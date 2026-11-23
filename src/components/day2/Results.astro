@@ -4,8 +4,14 @@ const R = D.res;
 const lb = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[1]]));
 const x3 = (v: number) => v.toFixed(3), x2 = (v: number) => v.toFixed(2), pc = (v: number) => Math.round(100 * v);
 const ho = R.l7_heldout;
+const fam = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[4]]));
 const bestNN = ['NHITS', 'NHITS_tuned', 'NHITS_noexog', 'NHITSx', 'NHITS_MQ'].reduce((b, m) => lb[m] < lb[b] ? m : b);
-const day2gain = pc(1 - lb[bestNN] / lb.LightGBM);
+const bestSingle = R.lb.filter((r: any[]) => r[4] !== 'ens').reduce((b: any[], r: any[]) => r[1] < b[1] ? r : b)[0];
+const day2gain = pc(1 - lb[bestSingle] / lb.LightGBM), nnGain = pc(1 - lb[bestNN] / lb.LightGBM);
+const L4 = R.l4, v4 = L4.valid, t4 = L4.test;
+const v4best = Object.keys(v4).reduce((b, m) => v4[m][0] < v4[b][0] ? m : b);
+const ftGap = v4.Chronos2_ft[0] - v4.Chronos2_zs_cov[0];
+const nm4: Record<string, string> = { Chronos2_zs: 'Chronos-2 zero-shot', Chronos2_zs_cov: 'Chronos-2 with covariates', Chronos2_ft: 'fine-tuned Chronos-2', TimesFM_zs: 'TimesFM 2.5', NHITS: 'default NHITS' };
 const l1 = R.l1, lgbT = l1.find((r: any[]) => r[0] === 'LightGBM')[1], nnT = l1.filter((r: any[]) => r[0] !== 'LightGBM' && r[0] !== 'DLinear').map((r: any[]) => r[1]);
 const nnBest = Math.min(...l1.filter((r: any[]) => r[0] !== 'LightGBM').map((r: any[]) => r[2]));
 const loss = R.l2_loss || {}, cost = R.l2_cost;
@@ -15,8 +21,7 @@ const lift = Object.fromEntries(R.l3_lift);
 const [a3, b3] = [R.l3_cov.NHITS_noexog, R.l3_cov.NHITSx];
 const l5 = R.l5, olsItem = l5.m['MinT-ols'][4] / l5.base[4], wvItem = l5.m['MinT-wls_var'][4] / l5.base[4], wvTot = l5.m['MinT-wls_var'][0] / l5.base[0];
 const T = R.l7_types, win = (t: string) => { const r = T.rows.find((x: any[]) => x[0] === t)[1]; return T.models[r.indexOf(Math.min(...r))]; };
-const covWins = ['smooth', 'erratic', 'lumpy'].filter(t => win(t) === 'NHITSx');
-const intWin = win('intermittent');
+const f = (v: number) => v.toLocaleString('en-US');
 const top = R.l7_mean.filter((r: any[]) => !/^(ETS|AutoETS|Naive|SeasonalNaive|DLinear)/.test(r[0])).slice(0, 10).map((r: any[]) => r[0]);
 const btO = R.l7_bt.map((r: any[]) => r[0]).filter((m: string) => top.includes(m));
 const mover = top.slice(0, 6).reduce((b: string, m: string) => (top.indexOf(m) - btO.indexOf(m)) > (top.indexOf(b) - btO.indexOf(b)) ? m : b);
@@ -32,9 +37,18 @@ const ord = (n: number) => n + (['th', 'st', 'nd', 'rd'][n % 10 > 3 || [11, 12, 
   </div>
 
   <div class="plate">
+    <h3>Every metric, every model</h3>
+    <div class="ctrl"><div class="seg" id="suiteGroup"><button aria-pressed="true" data-v="scaled">Scaled</button><button aria-pressed="false" data-v="rel">vs SeasonalNaive</button><button aria-pressed="false" data-v="pct">Percentage</button><button aria-pressed="false" data-v="vol">Volume</button><button aria-pressed="false" data-v="bias">Bias</button><button aria-pressed="false" data-v="type">By demand type</button><button aria-pressed="false" data-v="int">Intervals</button></div></div>
+    <div class="tw" id="suiteTable"></div>
+    <p class="cap" id="suiteNote"></p>
+    <p class="cap">The workshop's metric suite on the test weeks, from <code>utilsforecast</code> and <code>sktime</code> (none hand-written). Click a column to sort; green marks the best single model (ensembles, marked *, are left out of that). The labs save every forecast, so any other metric can be computed later without refitting.</p>
+    <p class="take">The ranking depends on the question. {(() => { const S = R.suite, single = Object.keys(S).filter(m => fam[m] !== 'ens'); const by = (k: string) => single.reduce((b, m) => S[m][k] < S[b][k] ? m : b); return `${by('mean_rmsse')} has the lowest mean RMSSE, ${by('median_rmsse')} the lowest median, ${by('pooled_wape')} the lowest volume-weighted WAPE and ${by('mean_mase')} the lowest mean MASE`; })()}. On bias, LightGBM over-forecasts total volume by about {pc(R.lb_bias.LightGBM)} %; the two Chronos-2 models and NHITSx stay within {Math.ceil(100 * Math.max(...['NHITSx', 'Chronos2_ft', 'Chronos2_zs_cov'].map(m => Math.abs(R.lb_bias[m]))))} %.</p>
+  </div>
+
+  <div class="plate">
     <h3>The day as a journey (mean RMSSE)</h3>
     <div class="fig" id="figJourney"></div>
-    <p class="take">The biggest single step is Day 1's: going global with covariates ({x3(lb.SeasonalNaive)} → {x3(lb.LightGBM)}). Day 2's best single model ({bestNN}) adds about {day2gain} % more, and averaging adds a little on top.</p>
+    <p class="take">The biggest single step is Day 1's: going global with covariates ({x3(lb.SeasonalNaive)} → {x3(lb.LightGBM)}). Day 2's best single model ({bestSingle}) adds about {day2gain} % more; the best model trained only on our data ({bestNN}) adds about {nnGain} %. Averaging adds a little on top.</p>
   </div>
 
   <div class="grid2">
@@ -63,6 +77,13 @@ const ord = (n: number) => n + (['th', 'st', 'nd', 'rd'][n % 10 > 3 || [11, 12, 
     </div>
   </div>
 
+  <div class="plate" id="lab04">
+    <h3>Lab 04 · foundation models: fine-tune or not?</h3>
+    <div class="fig" id="figL4"></div>
+    <p class="cap">All {f(R.n_series)} series. Lab 04 decides on the validation weeks and scores the test weeks once. Chronos-2 and TimesFM 2.5 run through <code>timecopilot</code>; SeasonalNaive and NHITS are the same-day yardsticks. Seconds are for validation on a 4-core CPU without a GPU.</p>
+    <p class="take">{nm4[v4best]} is the best model on the validation weeks ({x3(v4[v4best][0])}); fine-tuning made validation worse by {ftGap.toFixed(3)}, so the lab's rule keeps the zero-shot model. On the test weeks the fine-tuned model edges ahead ({x3(t4.Chronos2_ft[0])} vs {x3(t4.Chronos2_zs_cov[0])}), a gap smaller than the seed noise Lab 02 measured for NHITS ({R.l2_seed.toFixed(3)}). Both beat {bestNN} ({x3(lb[bestNN])}), the best model trained only on our data. Without price and promotions, Chronos-2 ({x3(t4.Chronos2_zs[0])}) and TimesFM ({x3(t4.TimesFM_zs[0])}) land near {nm4.NHITS} ({x3(t4.NHITS[0])}): the gain comes from pretraining plus the covariates, not from pretraining alone.</p>
+  </div>
+
   <div class="plate">
     <h3>Lab 05 · reconciliation: gain or loss at each level</h3>
     <div class="ctrl"><div class="seg" id="l5Toggle"></div></div>
@@ -79,13 +100,13 @@ const ord = (n: number) => n + (['th', 'st', 'nd', 'rd'][n % 10 > 3 || [11, 12, 
     <div class="plate">
       <h3>Lab 07 · who wins where (mean RMSSE by demand type)</h3>
       <div class="fig" id="figL7"></div>
-      <p class="take">No model wins everywhere. NHITSx takes {covWins.join(', ')}; {intWin} (no covariates) wins intermittent.</p>
+      <p class="take">No model wins everywhere: {['smooth', 'erratic', 'lumpy', 'intermittent'].map(t => `${win(t)} takes ${t}`).join(', ')}. The foundation models win the items that sell most weeks; on intermittent items a neural model without covariates is still best. These means use the {f(T.rows.reduce((z: number, r: any[]) => z + r[2], 0))} series every model forecast.</p>
     </div>
   </div>
 
   <div class="plate">
     <h3>Lab 07 · two rankings: mean RMSSE vs head-to-head rating</h3>
     <div class="fig" id="figL7b"></div>
-    <p class="take">Lines that cross are models the mean and the duels disagree on. {mover} is {ord(top.indexOf(mover) + 1)} on the mean but {ord(btO.indexOf(mover) + 1)} in the duels: it wins many ordinary series by a little and loses some intermittent ones by a lot.</p>
+    <p class="take">Lines that cross are models the mean and the duels disagree on. {mover} is {ord(top.indexOf(mover) + 1)} on the mean but {ord(btO.indexOf(mover) + 1)} in the duels: it wins many ordinary series by a little and loses some intermittent ones by a lot. At the top, {btO[0]} leads the duels and {top[0]} the mean.</p>
   </div>
 </section>

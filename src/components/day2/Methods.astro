@@ -81,7 +81,7 @@ const allNhits = R.l7_top3.every((m: string) => m.startsWith('NHITS'));
       <div class="ctrl"><label>Correlation between the models' errors <input type="range" id="enR" min="0" max="100" value="50"></label></div>
       <div class="fig" id="figEN"></div>
       <div class="readout" id="enOut"></div>
-      <p class="take">Averaging three equally good models cuts the error by a factor that depends only on how alike their mistakes are. The top 3 here ({topNames}) {allNhits ? 'are all NHITS variants, but with different inputs and settings they still make different mistakes' : 'come from different families, so they disagree more'}: their average scores {ho.top3.toFixed(3)} vs {ho.best_single[1].toFixed(3)} for the best single model on held-out series.</p>
+      <p class="take">Averaging three equally good models cuts the error by a factor that depends only on how alike their mistakes are. The top 3 here ({topNames}) {allNhits ? 'are all NHITS variants, but with different inputs and settings they still make different mistakes' : 'are not all from one family, so their mistakes differ more'}: their average scores {ho.top3.toFixed(3)} vs {ho.best_single[1].toFixed(3)} for the best single model on held-out series.</p>
     </div>
   </div>
 </section>
