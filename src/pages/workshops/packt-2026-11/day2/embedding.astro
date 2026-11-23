@@ -1,0 +1,15 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import Subpage from '../../../../components/day2/Subpage.astro';
+import Embedding from '../../../../components/day2/Embedding.astro';
+import { getTranslations } from '../../../../i18n';
+
+const t = getTranslations('en');
+const locale = 'en' as const;
+---
+
+<Layout t={t} locale={locale} title={t.workshop.pages.embedding.title} description={t.workshop.pages.embedding.lede} currentPath="/workshops/packt-2026-11/day2/embedding">
+  <Subpage t={t} locale={locale} page="embedding">
+    <Embedding />
+  </Subpage>
+</Layout>

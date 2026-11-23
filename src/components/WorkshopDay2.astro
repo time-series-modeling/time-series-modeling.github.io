@@ -49,7 +49,7 @@ const base = PACKT_2026_11.day2;
     <h2 class="mt-16 text-2xl font-bold text-slate-900">{w.explore}</h2>
     <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {
-        (['data', 'methods', 'models', 'results'] as const).map((k) => (
+        (['data', 'methods', 'models', 'results', 'embedding'] as const).map((k) => (
           <a
             href={localePath(locale, `${base}/${k}`)}
             class="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-primary-300 hover:shadow-md"
