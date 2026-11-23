@@ -10,25 +10,31 @@ const neverNoise = P.m_noise.never / P.n_noise;
 const tau1 = P.tau_hist['1'] / P.n;
 const tauLe4 = ['1', '2', '3', '4'].reduce((z, k) => z + (P.tau_hist[k] || 0), 0) / P.n;
 const pooled = P.pooled?.best;
+const SH = P.shuffle;
+const AN = P.analogs;
 ---
 <section class="d2 part">
   <div class="plate">
-    <h3>The idea in one paragraph</h3>
-    <p>Takens (1981) proved that, for a smooth deterministic system on a compact manifold of dimension <i>d</i>, the vector of
-      2<i>d</i>+1 delayed copies of a single generic observation, (x(t), x(t+1), …, x(t+2d)), is an <i>embedding</i>: a one-to-one,
-      smooth picture of the hidden state. So from one series you can rebuild the shape of the dynamics, and nearby points in that
-      picture have similar futures. Packard et al. (1980) had shown the same reconstruction in practice. This page tries it on the
-      workshop data: {f(P.n)} weekly series, 93 training weeks each.</p>
+    <h3>Why can we forecast these series at all?</h3>
+    <p>A forecast is a bet that the future will resemble what followed similar situations in the past. Delay embeddings make
+      that idea visible. Takens (1981) proved that, for a smooth deterministic system on a compact manifold of dimension <i>d</i>,
+      2<i>d</i>+1 delayed copies of a single generic observation, (x(t), x(t−τ), …, x(t−2dτ)), form an <i>embedding</i>: a one-to-one,
+      smooth picture of the hidden state (Packard et al. 1980 had shown the reconstruction in practice). In that picture each week
+      is a point, the "state" of the series, and if nearby states have similar futures, the series is predictable. This page
+      looks at the workshop data that way: {f(P.n)} weekly series, 93 training weeks each. Retail sales are not a clean deterministic
+      system, so we use the pictures to look for structure, not to prove the theorem applies.</p>
     <div class="stats">
-      <div class="stat"><b>{pct(never)} %</b><span>of series never reach "near zero" false neighbours by m = 7 (white noise: {pct(neverNoise)} %)</span></div>
-      <div class="stat"><b>{pct(P.smap_sig_all)} %</b><span>show a nonlinear S-map gain beyond linear surrogates (5 % expected by chance)</span></div>
-      <div class="stat"><b>{f(mi('Simplex'), 3)}</b><span>mean RMSSE of simplex forecasts from each series' own embedding (Naive {f(mi('Naive'), 3)})</span></div>
-      <div class="stat"><b>{f(mi('PooledAnalog'), 3)}</b><span>pooled analogs, neighbours from all series (AutoETS {f(mi('AutoETS'), 3)}, NHITSx {f(mi('NHITSx'), 3)})</span></div>
+      <div class="stat"><b>{SH ? pct(SH.share_gt) : '–'} %</b><span>of series predict their own next week better than with the values shuffled (chance: 50 %); {SH ? pct(SH.share_gt_q90) : '–'} % beat 9 in 10 shuffles (chance: 10 %)</span></div>
+      <div class="stat"><b>{SH ? f(SH.med_real, 2) : '–'}</b><span>median skill ρ from a series' own past states (shuffled: {SH ? f(SH.med_shuf, 2) : '–'})</span></div>
+      <div class="stat"><b>{pct(P.smap_sig_all)} %</b><span>show state-dependent (nonlinear) structure beyond linear surrogates (5 % by chance)</span></div>
+      <div class="stat"><b>{AN ? f(AN.n_windows) : '–'}</b><span>26-week windows from all items: a shared library of past situations to look up</span></div>
     </div>
-    <p class="take">Short answer: the pictures are worth a look, but the theorem's promise does not carry over to single retail series.
-      Their false-neighbour curves mostly look like white noise, the yearly cycle is seen less than twice, and forecasting from a series' own
-      embedding is worse than the naive baseline. The idea works better when you <i>pool</i> neighbours across many series: that beats
-      Naive and matches AutoETS, a nearest-neighbour cousin of the global models used all day, though still well behind them.</p>
+    <p class="take">Short answer: yes, there are patterns. Most are weak inside a single item and become usable when you pool across items. In most series,
+      states that look alike are followed by weeks that look alike more often than chance (section 2), and when you search
+      <i>all</i> items for windows that look like this item's recent weeks, their continuations give a sensible range for its next weeks (section 3).
+      That is why a global model trained on every series can forecast an item whose own 93 weeks look like noise. The recurrence
+      plot (section 4) shows the repeating stretches directly. The classic recipe for a single series, choosing τ and m and
+      forecasting from that series' own past, is weak on this data (sections 5 to 7).</p>
   </div>
 
   <div class="plate">
@@ -57,7 +63,76 @@ const pooled = P.pooled?.best;
   </div>
 
   <div class="plate">
-    <h3>2 · Choosing τ and m</h3>
+    <h3>2 · Similar states, similar futures</h3>
+    <div class="grid2">
+      <div>
+        <div class="fig" id="embNb"></div>
+        <p class="readout" id="embNbRead"></p>
+        <p class="cap">Black: the series around "now" (the time slider in section 1; by default the last training week), with the delay
+          coordinates as dots. Orange: what followed the m + 1 past states closest to it (orange rings in the portrait), with their own
+          run-up in grey. Blue: their weighted average, the simplex forecast (Sugihara and May 1990). Dashed black: what actually happened.</p>
+      </div>
+      <div>
+        <div class="fig" id="embShuf"></div>
+        <p class="readout" id="embShufRead"></p>
+        <p class="cap">Is that better than luck? Skill ρ is the correlation between the neighbours' next week and the real next week,
+          for training weeks 61 to 93 with weeks 1 to 60 as the library, at the best E. Grey: the same calculation on 19 random
+          shufflings of the same values, which keep the values and destroy the order. Picking the best E is optimistic for both, so the
+          shuffles are not at zero.</p>
+      </div>
+    </div>
+    <div class="fig" id="embPShuf"></div>
+    <div class="legend"><span><i style="background:var(--a1)"></i>{SH ? f(SH.n) : ''} series, real order</span><span><i style="background:#94a3b8"></i>same series, values shuffled once</span></div>
+    <p class="take">{SH ? pct(SH.share_gt) : ''} % of series predict their next week better in real order than shuffled, and the whole
+      distribution moves right (median ρ {SH ? f(SH.med_real, 2) : ''} against {SH ? f(SH.med_shuf, 2) : ''}). By type: smooth
+      {SH ? pct(SH.by_type.smooth[0]) : ''} %, erratic {SH ? pct(SH.by_type.erratic[0]) : ''} %, intermittent
+      {SH ? pct(SH.by_type.intermittent[0]) : ''} %, lumpy {SH ? pct(SH.by_type.lumpy[0]) : ''} %. So the order of the weeks carries
+      information: that is what makes forecasting possible. A stricter bar gives the same picture: {SH ? pct(SH.share_gt_q90) : ''} % of series beat
+      the 90th percentile of shuffled skill, where chance would give 10 %. It is a modest signal per item, far from the Lorenz and yearly-cycle
+      references. The whole-store total fails this test: its level in weeks 61 to 93 is not in the library of weeks 1 to 60, so a trend or level shift
+      leaves nearest neighbours with nothing close to look up.</p>
+  </div>
+
+  <div class="plate">
+    <h3>3 · Similar states in other items</h3>
+    <div class="ctrl"><div class="seg" id="embAnSel"></div></div>
+    <div class="fig" id="embAn"></div>
+    <div class="legend"><span><i style="background:var(--ink)"></i>this item (dashed: the 14 test weeks)</span><span><i style="background:#94a3b8"></i>12 closest windows from other items</span><span><i style="background:var(--a2)"></i>what followed them</span><span><i style="background:var(--a1)"></i>weighted average of the {AN ? AN.k : ''} closest (band: 10th to 90th percentile)</span></div>
+    <p class="readout" id="embAnRead"></p>
+    <div class="tw" id="embAnList"></div>
+    <p class="cap">Every item is divided by its own training mean, so a window is a shape, not a level. The library holds every {AN ? AN.L : ''}-week
+      training window of every item that still has 14 known weeks after it; the item itself is left out. Nearest neighbours by Euclidean
+      distance (scikit-learn), weights exp(−d/d<sub>min</sub>) as in simplex projection. Window length and k were chosen on the validation weeks.
+      Orange ticks at the bottom: promotion weeks of this item.</p>
+    <p class="take">The neighbours are unrelated products (the list shows the closest few), yet their continuations often bracket what this
+      item did next. Scored on all series, this lookup beats both the item's own embedding and "repeat last week" (mean RMSSE
+      {f(mi('PooledAnalog'), 3)} against {f(mi('Simplex'), 3)} and {f(mi('Naive'), 3)}; table in section 7). A single item has about 50 past states to compare with; the panel has hundreds of thousands. Delay vectors from many
+      series are what a global model sees when it is trained on windows of every item, which is one way to see why the Day 2 global models
+      work. Like simplex, the analogs only know sales: promotions and prices, which the trained models also use, are not in the windows.</p>
+  </div>
+
+  <div class="plate">
+    <h3>4 · Recurrence plot: repeating stretches</h3>
+    <div class="ctrl"><label>recurrence rate <input type="range" id="embRR" min="2" max="30" step="1" value="10" /></label></div>
+    <div class="grid2">
+      <div class="fig"><canvas id="embRP" style="width:100%;max-width:360px;aspect-ratio:1;border:1px solid var(--line)"></canvas></div>
+      <div>
+        <p class="readout" id="embRpRead"></p>
+        <p class="cap">A dot at (i, j) when the embedded states at weeks i and j are within ε of each other, with ε set so that the chosen
+          share of pairs counts as close. Eckmann, Kamphorst and Ruelle (1987) introduced the plot (with a radius per point that holds at
+          least 10 neighbours; a single ε is the common modern choice). Orange lines: start of the test window. Uses the τ and 2D/3D
+          setting from section 1.</p>
+        <p class="take">This is a picture of "has the series been here before?" that a line chart cannot give. Blocks are periods spent in one
+          state, gaps are weeks unlike anything else, and diagonal lines are stretches of the past that repeat; DET is the share of dots on such lines. Compare it with the
+          shuffled series (one random shuffle, same recurrence rate): the references reach 76 to 93 % against about 20 %. The items and
+          aggregates are only modestly above their shuffle, and the smooth and intermittent examples not at all. Promotion weeks show as
+          isolated rows and columns: they resemble nothing else.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="plate">
+    <h3>5 · Choosing τ and m</h3>
     <div class="grid2">
       <div>
         <div class="fig" id="embMI"></div>
@@ -80,26 +155,7 @@ const pooled = P.pooled?.best;
   </div>
 
   <div class="plate">
-    <h3>3 · Recurrence plot</h3>
-    <div class="ctrl"><label>recurrence rate <input type="range" id="embRR" min="2" max="30" step="1" value="10" /></label></div>
-    <div class="grid2">
-      <div class="fig"><canvas id="embRP" style="width:100%;max-width:360px;aspect-ratio:1;border:1px solid var(--line)"></canvas></div>
-      <div>
-        <p class="readout" id="embRpRead"></p>
-        <p class="cap">A dot at (i, j) when the embedded states at weeks i and j are within ε of each other, with ε set so that the chosen
-          share of pairs counts as close. Eckmann, Kamphorst and Ruelle (1987) introduced the plot (with a radius per point that holds at
-          least 10 neighbours; a single ε is the common modern choice). Orange lines: start of the test window. Uses the τ and 2D/3D
-          setting from section 1.</p>
-        <p class="take">Diagonal lines mean stretches of the past that repeat; DET is the share of dots on such lines. Compare it with the
-          shuffled series (one random shuffle, same recurrence rate): the references reach 76 to 93 % against about 20 %. The items and
-          aggregates are only modestly above their shuffle, and the smooth and intermittent examples not at all. Promotion weeks show as
-          isolated rows and columns: they resemble nothing else.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="plate">
-    <h3>4 · Forecasting from the embedding</h3>
+    <h3>6 · Forecasting from a series' own embedding</h3>
     <div class="grid2">
       <div><div class="fig" id="embRhoE"></div><p class="cap">Simplex projection (Sugihara and May 1990, pyEDM): predict next week from the E+1 nearest past states, weighted by exp(−d/d<sub>min</sub>). Skill ρ = correlation of prediction and outcome on training weeks 61–93, library weeks 1–60.</p></div>
       <div><div class="fig" id="embRhoTp"></div><p class="cap">Skill against steps ahead at the best E. Purple dashed: Lorenz with 107 points. For low-dimensional chaos skill decays with the horizon; for uncorrelated noise it is flat near zero.</p></div>
@@ -114,7 +170,7 @@ const pooled = P.pooled?.best;
   </div>
 
   <div class="plate">
-    <h3>5 · All {f(P.n)} series</h3>
+    <h3>7 · All {f(P.n)} series</h3>
     <div class="grid2">
       <div><div class="fig" id="embPTau"></div><p class="cap">Delay chosen by the first mutual-information minimum.</p></div>
       <div><div class="fig" id="embPM"></div><div class="legend"><span><i style="background:var(--a1)"></i>workshop series</span><span><i style="background:#94a3b8"></i>white noise, same length and τ</span></div></div>
@@ -136,6 +192,13 @@ const pooled = P.pooled?.best;
   <div class="plate">
     <h3>What to take away</h3>
     <ul class="feat" style="list-style:disc;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem;font-size:.9rem;color:#334155">
+      <li><b>The order of the weeks carries information.</b> In {SH ? pct(SH.share_gt) : ''} % of series, past states that look like the current one
+        are followed by weeks that look like the real next week more often than with the same values shuffled. That is the minimum a forecast needs.</li>
+      <li><b>The patterns are shared across items.</b> Windows from unrelated products, scaled to their own level, are often close to an item's recent
+        weeks, and what followed them sketches its next weeks. One item has about 50 comparable past states; the panel has {AN ? f(AN.n_windows) : ''}.
+        This is a picture of why global models, trained on windows of every series, can forecast items whose own history looks like noise.</li>
+      <li><b>The most visible pattern comes from outside.</b> Promotion weeks draw the "star" in the portraits and the isolated stripes in the recurrence
+        plots. They are not hidden dynamics but the price calendar, which is why the models with price and promotion inputs do best on Day 2.</li>
       <li><b>The assumptions do not hold.</b> Takens needs a deterministic, autonomous, noise-free system and long records. Weekly retail sales
         are driven from outside (prices, promotions, holidays), are counts with many zeros, and give 93 points. Stark (1999) and Stark et al. (2003)
         extend embedding theorems to systems with deterministic and stochastic forcing, but they need the forcing to be generic and say nothing
@@ -145,9 +208,9 @@ const pooled = P.pooled?.best;
       <li><b>Check the package against the paper.</b> teaspoon's FNN counts a neighbour as false only if it passes Kennel's second test, and stops at
         10 %, so white noise of this length "embeds" in 3 dimensions. We used neurokit2's implementation, which flags a neighbour if either test
         fires (R<sub>tol</sub> = 10, A<sub>tol</sub> = 2, R<sub>A</sub> = standard deviation), as in Kennel et al.</li>
-      <li><b>Where it helps.</b> As a visual check of how much structure a series has (recurrence plots, DET against a shuffle), as a nonlinearity
-        test with proper surrogates ({pct(P.smap_sig_all)} % of series pass against 5 % by chance, {pct(P.smap_sig.erratic[0])} % of erratic ones), and as an argument for pooling: a library of windows from many series is what makes nearest neighbours work.
-        Aggregates (department, store) and the synthetic references show what clean structure looks like.</li>
+      <li><b>As a single-series method it is weak here.</b> Choosing τ and m is unreliable with 93 noisy weeks, and forecasting an item from its own
+        embedding is worse than repeating last week. {pct(P.smap_sig_all)} % of series pass the S-map nonlinearity test (5 % by chance), which says
+        "not linear and stationary" more than "deterministic". Aggregates and the synthetic references show what clean structure would look like.</li>
     </ul>
   </div>
 

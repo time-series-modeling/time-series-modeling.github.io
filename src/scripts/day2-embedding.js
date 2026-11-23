@@ -37,19 +37,20 @@ if (document.querySelector("#embSeries")) {
   seg("#embDim", "dim"); seg("#embCol", "col", () => { drawTs(); drawPortrait(); });
   $("#embTau").addEventListener("input", e => { ST.tau = +e.target.value; drawAll(); });
   $("#embLog").addEventListener("change", e => { ST.log = e.target.checked; drawAll(); });
-  $("#embT").addEventListener("input", e => { ST.t = +e.target.value; drawTs(); drawPortrait(); });
+  $("#embT").addEventListener("input", e => { ST.t = +e.target.value; drawTs(); drawPortrait(); drawNb(); });
   $("#embPlay").addEventListener("click", () => {
     if (ST.playing) { clearInterval(ST.playing); ST.playing = null; $("#embPlay").textContent = "Play"; return; }
     $("#embPlay").textContent = "Pause";
     const y = series(), lo = (ST.dim - 1) * ST.tau;
     if (ST.t == null || ST.t >= y.length - 1) ST.t = lo;
-    ST.playing = setInterval(() => { ST.t++; if (ST.t > y.length - 1) ST.t = lo; $("#embT").value = ST.t; drawTs(); drawPortrait(); }, y.length > 300 ? 25 : 90);
+    ST.playing = setInterval(() => { ST.t++; if (ST.t > y.length - 1) ST.t = lo; $("#embT").value = ST.t; drawTs(); drawPortrait(); drawNb(); }, y.length > 300 ? 25 : 90);
   });
   $("#embRR").addEventListener("input", e => { ST.rr = +e.target.value; drawRP(); });
 
   // ---------- embedding ----------
   function embed(y, m, tau) { const pts = []; for (let t = (m - 1) * tau; t < y.length; t++) { const v = []; for (let j = 0; j < m; j++) v.push(y[t - j * tau]); if (v.every(isFinite)) pts.push({ t, v }); } return pts; }
   const nTrain = () => cur().n_train;
+  const nowT = () => ST.t ?? (cur().y.length === E.dates.length ? nTrain() - 1 : cur().y.length - 1 - 8);
   function colOf(t) {
     const N = cur().y.length;
     if (ST.col === "split") return t >= nTrain() ? css("a2") : css("a1");
@@ -69,7 +70,7 @@ if (document.querySelector("#embSeries")) {
     } else for (const v of ticks(0, N - 1, 8)) txt(s, x(v), H - 8, fmt(v), { "text-anchor": "middle" });
     yAxis(s, yy, ticks(lo, hi, 4), L, W - R);
     el("path", { d: path(y.map((v, i) => [x(i), yy(v)])), fill: "none", stroke: css("ink"), "stroke-width": N > 300 ? 1 : 1.4 }, s);
-    const t = ST.t ?? N - 1, lab = ["x(t)", "x(t−τ)", "x(t−2τ)"];
+    const t = nowT(), lab = ["x(t)", "x(t−τ)", "x(t−2τ)"];
     for (let j = ST.dim - 1; j >= 0; j--) {
       const tj = t - j * ST.tau; if (tj < 0) continue;
       el("line", { x1: x(tj), x2: x(tj), y1: T, y2: H - B, stroke: [css("a1"), css("a3"), css("a4")][j], "stroke-dasharray": "3 3" }, s);
@@ -78,7 +79,7 @@ if (document.querySelector("#embSeries")) {
       txt(s, x(tj) + (right ? -5 : 5), T + 26 + 13 * j, lab[j], { class: "t-ink", "text-anchor": right ? "end" : "start" });
     }
     const tmax = N - 1, tmin = (ST.dim - 1) * ST.tau, ts = $("#embT");
-    ts.min = tmin; ts.max = tmax; if (ST.t == null) ts.value = tmax;
+    ts.min = tmin; ts.max = tmax; if (ST.t == null) ts.value = nowT();
   }
 
   function drawPortrait() {
@@ -109,8 +110,9 @@ if (document.querySelector("#embSeries")) {
     el("path", { d: path(P.map(p => [p.X, p.Y])), fill: "none", stroke: "#94a3b8", "stroke-width": P.length > 300 ? 0.6 : 0.9, opacity: 0.8 }, s);
     const r = P.length > 300 ? 1.6 : 3;
     [...P].sort((a, b) => a.z - b.z).forEach(p => el("circle", { cx: p.X, cy: p.Y, r, fill: colOf(p.t), opacity: 0.9 }, s));
-    const t = ST.t ?? y.length - 1, q = P.find(p => p.t === t);
+    const t = nowT(), q = P.find(p => p.t === t);
     if (q) { el("circle", { cx: q.X, cy: q.Y, r: 7, fill: "none", stroke: css("ink"), "stroke-width": 2 }, s); }
+    const NB = nbrs(); if (NB) NB.nb.forEach(n => { const p = P.find(p => p.t === n.t); if (p) el("circle", { cx: p.X, cy: p.Y, r: 6, fill: "none", stroke: css("a2"), "stroke-width": 2 }, s); });
     const ex = cur();
     $("#embRead").textContent = `τ = ${ST.tau} · ${pts.length} points in ${ST.dim}D · first MI minimum τ = ${ex.tau_mi}${ex.tau_acf0 ? ` · first ACF zero τ = ${ex.tau_acf0}` : ""}`;
   }
@@ -121,6 +123,93 @@ if (document.querySelector("#embSeries")) {
     host.addEventListener("pointermove", e => { if (!d) return; ST.yaw = d[2] + (e.clientX - d[0]) * 0.01; ST.pitch = Math.max(-1.4, Math.min(1.4, d[3] + (e.clientY - d[1]) * 0.01)); drawPortrait(); });
     host.addEventListener("pointerup", () => { d = null; });
   })();
+
+  // ---------- similar states, similar futures (own past) ----------
+  const HF = 8;
+  // the "now" state: the time slider if moved, else the last training week; its m+1 nearest past states
+  // whose next HF weeks were already known at that time (simplex projection's neighbours, weights exp(-d/d_min))
+  function nbrs() {
+    const y = series(), m = ST.dim, tau = ST.tau, pts = embed(y, m, tau);
+    const q = nowT();
+    const Q = pts.find(p => p.t === q); if (!Q) return null;
+    const c = pts.filter(p => p.t + HF <= q).map(p => ({ t: p.t, d: Math.hypot(...p.v.map((v, i) => v - Q.v[i])) })).sort((a, b) => a.d - b.d).slice(0, m + 1);
+    if (!c.length) return null;
+    const d1 = Math.max(c[0].d, 1e-9); c.forEach(n => n.w = Math.exp(-n.d / d1)); const sw = c.reduce((z, n) => z + n.w, 0); c.forEach(n => n.w /= sw);
+    return { q, m, tau, y, nb: c };
+  }
+  function drawNb() {
+    const NB = nbrs(), W = 440, H = 260, L = 52, R = 12, T = 14, B = 30, s = mk("#embNb", W, H);
+    if (!NB) { $("#embNbRead").textContent = "Move the time slider further right: there is not enough past for this τ and m."; return; }
+    const { q, m, tau, y, nb } = NB, back = (m - 1) * tau, x = lin(-back, HF, L, W - R);
+    const seg = (t0, a, b) => { const o = []; for (let h = a; h <= b; h++) { const v = y[t0 + h]; if (t0 + h >= 0 && t0 + h < y.length && isFinite(v)) o.push([h, v]); } return o; };
+    const lines = [seg(q, -back, Math.min(HF, y.length - 1 - q)), ...nb.map(n => seg(n.t, -back, HF))];
+    const vals = lines.flat().map(p => p[1]), lo = Math.min(...vals), hi = Math.max(...vals), yy = lin(lo - 0.05 * (hi - lo), hi + 0.08 * (hi - lo), H - B, T);
+    yAxis(s, yy, ticks(lo, hi, 4), L, W - R);
+    el("rect", { x: x(0), y: T, width: x(HF) - x(0), height: H - B - T, fill: "color-mix(in srgb,var(--a2) 7%,transparent)" }, s);
+    el("line", { x1: x(0), x2: x(0), y1: T, y2: H - B, stroke: css("ink"), "stroke-dasharray": "2 3" }, s);
+    txt(s, x(0) + 4, T + 11, "now → next weeks", {});
+    for (let h = -back; h <= HF; h++) if (h % Math.max(1, Math.ceil((back + HF) / 10)) === 0) txt(s, x(h), H - 14, h, { "text-anchor": "middle" });
+    txt(s, (L + W) / 2, H - 2, "weeks from the state (0 = now, or the neighbour's week)", { "text-anchor": "middle" });
+    nb.forEach(n => { const o = seg(n.t, -back, HF);
+      el("path", { d: path(o.filter(p => p[0] <= 0).map(p => [x(p[0]), yy(p[1])])), fill: "none", stroke: "#94a3b8", "stroke-width": 1.2 }, s);
+      el("path", { d: path(o.filter(p => p[0] >= 0).map(p => [x(p[0]), yy(p[1])])), fill: "none", stroke: css("a2"), "stroke-width": 1.2, opacity: 0.75 }, s); });
+    const pred = []; for (let h = 0; h <= HF; h++) pred.push([h, nb.reduce((z, n) => z + n.w * y[n.t + h], 0)]);
+    el("path", { d: path(pred.map(p => [x(p[0]), yy(p[1])])), fill: "none", stroke: css("a1"), "stroke-width": 2.6 }, s);
+    const o = lines[0];
+    el("path", { d: path(o.filter(p => p[0] <= 0).map(p => [x(p[0]), yy(p[1])])), fill: "none", stroke: css("ink"), "stroke-width": 2.2 }, s);
+    el("path", { d: path(o.filter(p => p[0] >= 0).map(p => [x(p[0]), yy(p[1])])), fill: "none", stroke: css("ink"), "stroke-width": 1.6, "stroke-dasharray": "4 3" }, s);
+    for (let j = 0; j < m; j++) { const v = y[q - j * tau]; if (isFinite(v)) el("circle", { cx: x(-j * tau), cy: yy(v), r: 4, fill: css("ink") }, s); }
+    const wk = t => y.length === E.dates.length ? E.dates[t] : `t=${t}`;
+    $("#embNbRead").textContent = `now = ${y.length === E.dates.length ? E.dates[q] : "t=" + q} · ${nb.length} nearest past states (m + 1): ${nb.map(n => wk(n.t)).join(", ")}`;
+  }
+  function drawShuf() {
+    const ex = cur(), W = 440, H = 170, L = 14, R = 14, s = mk("#embShuf", W, H), real = Math.max(...ex.rhoE.filter(v => v != null));
+    if (!ex.rho_shuf) { $("#embShufRead").textContent = "No shuffle baseline for this reference."; return; }
+    const g = ex.rho_shuf.filter(v => v != null), lo = Math.min(-0.2, ...g, real) - 0.03, hi = Math.max(1, ...g, real) + 0.0, x = lin(lo, hi, L + 10, W - R - 10);
+    el("line", { x1: L, x2: W - R, y1: 110, y2: 110, class: "ax" }, s);
+    ticks(lo, hi, 5).forEach(v => { el("line", { x1: x(v), x2: x(v), y1: 106, y2: 114, class: "ax" }, s); txt(s, x(v), 130, fmt(v, 2), { "text-anchor": "middle" }); });
+    const r = rng(7); g.forEach(v => el("circle", { cx: x(v), cy: 92 - 30 * r(), r: 4, fill: "#94a3b8", opacity: 0.85 }, s));
+    el("line", { x1: x(real), x2: x(real), y1: 40, y2: 112, stroke: css("a1"), "stroke-width": 3 }, s);
+    txt(s, Math.min(Math.max(x(real), 80), W - 80), 32, `this series: ρ = ${fmt(real, 2)}`, { "text-anchor": "middle", class: "t-ink" });
+    txt(s, W / 2, 152, "simplex skill ρ (next week, best E)  ·  grey: 19 shuffles", { "text-anchor": "middle" });
+    const above = g.filter(v => v >= real).length;
+    $("#embShufRead").textContent = above === 0 ? `${ex.short}: real order beats all 19 shuffles (p = 0.05)` : `${ex.short}: ${above} of 19 shuffles do as well (p = ${fmt((1 + above) / 20, 2)})`;
+  }
+
+  // ---------- similar states in other items (precomputed, pooled library) ----------
+  const AN = E.panel.analogs;
+  let anK = AN ? Object.keys(AN.ex)[1] : null;
+  if (AN && $("#embAnSel")) {
+    const sel = $("#embAnSel");
+    Object.keys(AN.ex).forEach(k => { const b = document.createElement("button"); b.textContent = E.ex[k] ? E.ex[k].short : k; b.dataset.v = k; b.setAttribute("aria-pressed", k === anK); sel.appendChild(b); });
+    sel.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { sel.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); anK = b.dataset.v; drawAn(); }));
+  }
+  function drawAn() {
+    if (!AN) return;
+    const a = AN.ex[anK], Lw = AN.L, Hh = a.mean.length, W = 720, H = 270, L = 46, R = 12, T = 14, B = 30, s = mk("#embAn", W, H);
+    const x = lin(-Lw + 1, Hh, L, W - R), nb = a.nb;
+    const vals = [...a.q, ...a.actual, ...a.q90, ...nb.flatMap(n => [...n.x, ...n.f])], hi = Math.min(Math.max(...vals), Math.max(...a.q, ...a.actual, ...a.q90) * 1.6) * 1.05;
+    const yy = lin(0, hi, H - B, T), cl = v => yy(Math.min(v, hi));
+    yAxis(s, yy, ticks(0, hi, 4), L, W - R, v => fmt(v, 1));
+    el("rect", { x: x(0.5), y: T, width: x(Hh) - x(0.5), height: H - B - T, fill: "color-mix(in srgb,var(--a2) 7%,transparent)" }, s);
+    txt(s, x(0.5) + 4, T + 11, "next 14 weeks", {});
+    [-25, -20, -15, -10, -5, 0, 5, 10, 14].filter(v => v >= -Lw + 1).forEach(v => txt(s, x(v), H - 14, v, { "text-anchor": "middle" }));
+    txt(s, (L + W) / 2, H - 2, "weeks relative to the end of the window (sales ÷ each item's training mean)", { "text-anchor": "middle" });
+    const band = a.q90.map((v, h) => [x(h + 1), cl(v)]).concat(a.q10.map((v, h) => [x(h + 1), cl(v)]).reverse());
+    el("path", { d: path(band) + "Z", fill: "color-mix(in srgb,var(--a1) 14%,transparent)" }, s);
+    nb.forEach(n => {
+      el("path", { d: path(n.x.map((v, i) => [x(i - Lw + 1), cl(v)])), fill: "none", stroke: "#94a3b8", "stroke-width": 1, opacity: 0.7 }, s);
+      el("path", { d: path([[x(0), cl(n.x[Lw - 1])], ...n.f.map((v, h) => [x(h + 1), cl(v)])]), fill: "none", stroke: css("a2"), "stroke-width": 1, opacity: 0.55 }, s); });
+    el("path", { d: path([[x(0), yy(a.q[Lw - 1])], ...a.mean.map((v, h) => [x(h + 1), cl(v)])]), fill: "none", stroke: css("a1"), "stroke-width": 2.6 }, s);
+    el("path", { d: path(a.q.map((v, i) => [x(i - Lw + 1), cl(v)])), fill: "none", stroke: css("ink"), "stroke-width": 2.2 }, s);
+    el("path", { d: path([[x(0), yy(a.q[Lw - 1])], ...a.actual.map((v, h) => [x(h + 1), cl(v)])]), fill: "none", stroke: css("ink"), "stroke-width": 1.8, "stroke-dasharray": "4 3" }, s);
+    const pw = Math.max(2, x(1) - x(0) - 1);
+    a.pq.forEach((p, i) => p && el("rect", { x: x(i - Lw + 1) - pw / 2, y: H - B - 5, width: pw, height: 5, fill: css("a2"), opacity: 0.6 }, s));
+    a.pa.forEach((p, h) => p && el("rect", { x: x(h + 1) - pw / 2, y: H - B - 5, width: pw, height: 5, fill: css("a2"), opacity: 0.6 }, s));
+    $("#embAnRead").textContent = `${a.desc} (${a.id}) · its last ${Lw} training weeks against ${fmt(AN.n_windows)} windows from ${fmt(AN.n_items - 1)} other items · the ${AN.k} nearest come from ${a.n_items} items in ${a.n_depts} departments`;
+    $("#embAnList").innerHTML = `<table class="mtable"><thead><tr><th>neighbour item</th><th>window ends</th><th>distance</th></tr></thead><tbody>` +
+      nb.slice(0, 8).map(n => `<tr><td>${n.desc}</td><td>${n.end}</td><td>${fmt(n.d, 2)}</td></tr>`).join("") + "</tbody></table>";
+  }
 
   // ---------- choosing tau and m ----------
   function drawMI() {
@@ -266,6 +355,16 @@ if (document.querySelector("#embSeries")) {
         txt(s, x(v) + 5, cy + 4, `${fmt(100 * v)} %`, { class: "t-ink" }); });
       txt(s, (L + W) / 2, H - 2, "share of series with p ≤ 0.05 (S-map vs IAAFT)", { "text-anchor": "middle" });
     }
+    if (P.shuffle && $("#embPShuf")) { // real vs shuffled simplex skill, all series
+      const S = P.shuffle, W = 720, H = 230, L = 52, R = 12, T = 14, B = 30, s = mk("#embPShuf", W, H), bw = S.bins[1] - S.bins[0];
+      const mx = Math.max(...S.real, ...S.shuf) * 1.08, x = lin(S.bins[0], S.bins[S.bins.length - 1], L, W - R), y = lin(0, mx, H - B, T);
+      yAxis(s, y, ticks(0, mx, 4), L, W - R, v => fmt(v));
+      [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1].forEach(v => txt(s, x(v), H - 14, fmt(v, 2), { "text-anchor": "middle" }));
+      txt(s, (L + W) / 2, H - 2, "simplex skill ρ (next week, best E, weeks 61–93)", { "text-anchor": "middle" });
+      S.shuf.forEach((c, i) => el("rect", { x: x(S.bins[i]) + 1, width: x(S.bins[i] + bw) - x(S.bins[i]) - 2, y: y(c), height: y(0) - y(c), fill: "#94a3b8", opacity: 0.55 }, s));
+      el("path", { d: path(S.real.flatMap((c, i) => [[x(S.bins[i]), y(c)], [x(S.bins[i] + bw), y(c)]])), fill: "none", stroke: css("a1"), "stroke-width": 2.4 }, s);
+      [[S.med_shuf, "#64748b", "shuffled median"], [S.med_real, css("a1"), "real median"]].forEach(([v, c, l], i) => { el("line", { x1: x(v), x2: x(v), y1: T, y2: H - B, stroke: c, "stroke-dasharray": "4 3" }, s); txt(s, x(v) + 4, T + 12 + 14 * i, `${l} ${fmt(v, 2)}`, { class: "t-ink" }); });
+    }
     { // forecast table
       const F = P.fc, best = Math.min(...F.mean), nm = { Simplex: "Simplex (own past only)", PooledAnalog: "Pooled analogs (all series)", Chronos2_zs_cov: "Chronos-2 + covariates" };
       let h = `<table class="mtable"><thead><tr><th>model</th><th>mean RMSSE</th><th>median</th>${F.by_type.map(r => `<th>${r[0]}<br><span style="text-transform:none">${fmt(r[2])}</span></th>`).join("")}</tr></thead><tbody>`;
@@ -274,6 +373,6 @@ if (document.querySelector("#embSeries")) {
     }
   }
 
-  function drawAll() { $("#embTauV").textContent = ST.tau; drawTs(); drawPortrait(); drawMI(); drawFNN(); drawRP(); drawEDM(); drawFc(); }
-  drawAll(); drawPanel();
+  function drawAll() { $("#embTauV").textContent = ST.tau; drawTs(); drawPortrait(); drawNb(); drawShuf(); drawMI(); drawFNN(); drawRP(); drawEDM(); drawFc(); }
+  drawAll(); drawPanel(); drawAn();
 }
