@@ -313,6 +313,7 @@ export const zh: Translations = {
       methods: { title: '第二天 · 方法', lede: '每个组件讲一个概念。先拖动滑块，再读结论。这些组件使用模拟或简化数据。（图表说明为英文。）', card: '滚动起点评估、RMSSE、全局模型训练窗口、NHITS 分层、分位数损失、共形预测覆盖率上限、层级协调、Elo 评分与集成。' },
       models: { title: '第二天 · 模型', lede: '工作坊中每个模型如何工作，每个模型一个交互组件。尽量使用工作坊真实数据，示意图会注明。（图表说明为英文。）', card: 'Naive 与 SeasonalNaive、AutoETS、带单调约束的 LightGBM、N-BEATS、NHITS、DLinear、协变量如何输入，以及 Chronos-2 和 TimesFM。' },
       results: { title: '第二天 · 结果', lede: '工作坊笔记本参考运行（全部 17,241 条序列）的结果。除特别说明外为平均 RMSSE，越低越好；小于约 0.01 的差异在随机种子噪声范围内。（图表说明为英文。）', card: '最终排行榜、全天进展，以及每个实验一张图：训练成本、调参、促销、层级协调、区间覆盖率与模型选择。' },
+      embedding: { title: '第二天 · 附加：延迟嵌入', lede: '在全部 17,241 条工作坊序列上尝试 Takens 定理及相关工具（互信息、伪近邻、递归图、单纯形与 S-map 预测），并如实说明它们能看出什么、看不出什么。（图表说明为英文。）', card: '为真实序列构建延迟嵌入，选择 τ 和 m，阅读递归图，用替代数据检验非线性，并将基于嵌入的预测与工作坊模型比较。' },
     },
     footnote: '完整数据集（17,241 条序列）参考运行，2026 年 11 月 21 日：neuralforecast 3.2.2、mlforecast 1.1.0、statsforecast 2.1.1、hierarchicalforecast 1.5.3。实验 04（基础模型）尚未包含。',
     videos: [
