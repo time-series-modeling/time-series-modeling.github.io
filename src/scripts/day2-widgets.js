@@ -18,7 +18,7 @@ const mon = t => new Date(t).toLocaleString("en-US", { month: "short", year: "2-
 function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 function randn(r) { let u = 0, v = 0; while (!u) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 
-const FAM = { nn: ["a1", "neural (Day 2)"], gbm: ["a3", "LightGBM"], stat: ["a4", "statistical / reconciled"], base: ["muted", "baselines"], ens: ["a2", "ensembles (optimistic here)"] };
+const FAM = { nn: ["a1", "neural (Day 2)"], fm: ["a6", "foundation models (Lab 04)"], gbm: ["a3", "LightGBM"], stat: ["a4", "statistical / reconciled"], base: ["muted", "baselines"], ens: ["a2", "ensembles (optimistic here)"] };
 if (document.querySelector("#stats")) {
 /* ---------------- stats strip */
 (() => {
@@ -47,12 +47,12 @@ drawTotal("y"); seg("#totToggle", drawTotal);
 }
 if (document.querySelector("#exToggle")) {
 /* ---------------- examples */
-const MODELS = [["NHITSx", "a1"], ["LightGBM", "a3"], ["NHITS_noexog", "a4"], ["ENS_mean_top3", "a2"], ["SeasonalNaive", "muted"]];
-const exOn = new Set(["NHITSx", "LightGBM"]);
+const MODELS = [["NHITSx", "a1"], ["Chronos2_zs_cov", "a6"], ["LightGBM", "a3"], ["NHITS_noexog", "a4"], ["ENS_mean_top3", "a2"], ["SeasonalNaive", "muted"]];
+const exOn = new Set(["NHITSx", "Chronos2_zs_cov", "LightGBM"]);
 let exType = "smooth";
 const DT = RS.l7_types, dtv = (t, m) => DT.rows.find(r => r[0] === t)[1][DT.models.indexOf(m)], pct = t => Math.round(100 * D.demand_types[t] / D.n_series) + " %";
 const intBest = DT.models.reduce((b, m) => dtv("intermittent", m) < dtv("intermittent", b) ? m : b);
-const EXCAP = { smooth: `Smooth: sells most weeks with moderate swings. ${pct("smooth")} of series; every global model does well here (NHITSx ${dtv("smooth", "NHITSx").toFixed(2)}).`, erratic: `Erratic: sells most weeks but the size swings a lot, often with promotions. Covariates help most here (NHITSx ${dtv("erratic", "NHITSx").toFixed(2)} vs NHITS_noexog ${dtv("erratic", "NHITS_noexog").toFixed(2)}).`, intermittent: `Intermittent: many zero weeks. ${pct("intermittent")} of series, about ${Math.round(100 * RS.l7_int_share.NHITSx)} % of the summed error. Models without covariates do best (${intBest} ${dtv("intermittent", intBest).toFixed(2)} vs NHITSx ${dtv("intermittent", "NHITSx").toFixed(2)}).`, lumpy: `Lumpy: zero weeks and big spikes. The hardest to time; NHITSx ${dtv("lumpy", "NHITSx").toFixed(2)}.` };
+const EXCAP = { smooth: `Smooth: sells most weeks with moderate swings. ${pct("smooth")} of series; every global model does well here (NHITSx ${dtv("smooth", "NHITSx").toFixed(2)}).`, erratic: `Erratic: sells most weeks but the size swings a lot, often with promotions. Covariates help most here (NHITSx ${dtv("erratic", "NHITSx").toFixed(2)} vs NHITS_noexog ${dtv("erratic", "NHITS_noexog").toFixed(2)}; Chronos-2 with price and promotions in context ${dtv("erratic", "Chronos2_zs_cov").toFixed(2)}).`, intermittent: `Intermittent: many zero weeks. ${pct("intermittent")} of series, about ${Math.round(100 * RS.l7_int_share.NHITSx)} % of the summed error. Models without covariates do best (${intBest} ${dtv("intermittent", intBest).toFixed(2)} vs NHITSx ${dtv("intermittent", "NHITSx").toFixed(2)}).`, lumpy: `Lumpy: zero weeks and big spikes. The hardest to time; NHITSx ${dtv("lumpy", "NHITSx").toFixed(2)}.` };
 $("#exToggle").innerHTML = Object.keys(EXCAP).map(k => `<button aria-pressed="${k === exType}" data-v="${k}">${k[0].toUpperCase() + k.slice(1)} · ${fmt(D.demand_types[k])}</button>`).join("");
 $("#exModels").innerHTML = MODELS.map(([m, c]) => `<label><input type="checkbox" data-m="${m}" ${exOn.has(m) ? "checked" : ""}> <span style="color:var(--${c});font-weight:600">${m}</span></label>`).join("");
 $("#exModels").addEventListener("change", e => { const m = e.target.dataset.m; e.target.checked ? exOn.add(m) : exOn.delete(m); drawEx(); });
@@ -336,12 +336,12 @@ if (document.querySelector("#figJourney")) {
 /* ---------------- journey */
 (() => {
   const LBm = Object.fromEntries(RS.lb.map(r => [r[0], r[1]]));
-  const st = [["SeasonalNaive", LBm.SeasonalNaive, "base"], ["AutoETS", LBm.AutoETS, "stat"], ["LightGBM (Day 1)", LBm.LightGBM, "gbm"], ["NHITS default", LBm.NHITS, "nn"], ["NHITS tuned", LBm.NHITS_tuned, "nn"], ["NHITS no covariates", LBm.NHITS_noexog, "nn"], ["NHITS + covariates", LBm.NHITSx, "nn"]];
+  const st = [["SeasonalNaive", LBm.SeasonalNaive, "base"], ["AutoETS", LBm.AutoETS, "stat"], ["LightGBM|(Day 1)", LBm.LightGBM, "gbm"], ["NHITS default", LBm.NHITS, "nn"], ["NHITS tuned", LBm.NHITS_tuned, "nn"], ["NHITS no covariates", LBm.NHITS_noexog, "nn"], ["NHITS + covariates", LBm.NHITSx, "nn"], ["Chronos-2|+ covariates", LBm.Chronos2_zs_cov, "fm"], ["Chronos-2|fine-tuned", LBm.Chronos2_ft, "fm"]];
   const ylo = Math.floor(Math.min(...st.map(d => d[1])) * 10) / 10 - 0.1, yhi = Math.ceil(Math.max(...st.map(d => d[1])) * 10) / 10;
   const W = 900, H = 280, L = 50, R = 20, T = 20, B = 60, s = mk("#figJourney", W, H), x = i => L + (i + .5) * (W - L - R) / st.length, y = lin(ylo, yhi, H - B, T);
   yAxis(s, y, ticks(ylo, yhi, 4), L, W - R, v => v.toFixed(1));
   el("path", { d: path(st.map((d, i) => [x(i), y(d[1])])), fill: "none", stroke: css("line"), "stroke-width": 2 }, s);
-  st.forEach((d, i) => { el("circle", { cx: x(i), cy: y(d[1]), r: 7, fill: css(FAM[d[2]][0]) }, s); txt(s, x(i), y(d[1]) - 12, d[1].toFixed(3), { "text-anchor": "middle", class: "t-ink" }); const parts = d[0].split(" "); txt(s, x(i), H - B + 20, parts.slice(0, 2).join(" "), { "text-anchor": "middle" }); if (parts.length > 2) txt(s, x(i), H - B + 34, parts.slice(2).join(" "), { "text-anchor": "middle" }); });
+  st.forEach((d, i) => { el("circle", { cx: x(i), cy: y(d[1]), r: 7, fill: css(FAM[d[2]][0]) }, s); txt(s, x(i), y(d[1]) - 12, d[1].toFixed(3), { "text-anchor": "middle", class: "t-ink" }); const w = d[0].split(" "), parts = d[0].includes("|") ? d[0].split("|") : [w.slice(0, 2).join(" "), w.slice(2).join(" ")]; txt(s, x(i), H - B + 20, parts[0], { "text-anchor": "middle" }); if (parts[1]) txt(s, x(i), H - B + 34, parts[1], { "text-anchor": "middle" }); });
   txt(s, W - R, T, `Held-out half: top-3 average ${RS.l7_heldout.top3.toFixed(3)} vs best single ${RS.l7_heldout.best_single[1].toFixed(3)}`, { "text-anchor": "end", style: "fill:var(--a2);font-weight:600" });
 })();
 
@@ -433,8 +433,8 @@ if (document.querySelector("#figL7")) {
 /* ---------------- Lab 07 heatmap */
 (() => {
   const models = RS.l7_types.models, rows = RS.l7_types.rows;
-  const W = 460, H = 250, L = 96, T = 70, cw = (W - L - 40) / 6, ch = 40, s = mk("#figL7", W, H);
-  models.forEach((m, j) => txt(s, L + j * cw + cw / 2, T - 8, m.replace("LightGBM", "LGBM").replace("NHITS_", "NHITS "), { "text-anchor": "start", transform: `rotate(-35 ${L + j * cw + cw / 2} ${T - 8})`, class: "t-ink" }));
+  const W = 460, H = 266, L = 96, T = 86, cw = (W - L - 40) / 6, ch = 40, s = mk("#figL7", W, H);
+  models.forEach((m, j) => txt(s, L + j * cw + cw / 2, T - 8, m.replace("LightGBM", "LGBM").replace("NHITS_", "NHITS ").replace("Chronos2_", "Chronos-2 "), { "text-anchor": "start", transform: `rotate(-35 ${L + j * cw + cw / 2} ${T - 8})`, class: "t-ink" }));
   rows.forEach(([n, v, c], i) => {
     const mn = Math.min(...v), mx = Math.max(...v);
     txt(s, L - 8, T + i * ch + 18, n, { "text-anchor": "end", class: "t-ink" }); txt(s, L - 8, T + i * ch + 31, "n=" + fmt(c), { "text-anchor": "end" });
@@ -451,10 +451,77 @@ if (document.querySelector("#figL7b")) {
   const mean = top.map(([m, v]) => [SH(m), v]), bt = RS.l7_bt.filter(r => keep.has(r[0])).map(r => SH(r[0]));
   const W = 900, H = 330, xl = 260, xr = 640, T = 40, rh = 28, s = mk("#figL7b", W, H);
   txt(s, xl, 18, "rank by mean RMSSE", { "text-anchor": "end", class: "t-ink t-b" }); txt(s, xr, 18, "rank by Bradley–Terry rating", { class: "t-ink t-b" });
-  mean.forEach(([m, v], i) => { const j = bt.indexOf(m), hl = ["NHITSx", "LightGBM", "NHITS_noexog"].includes(m); const c = hl ? css({ NHITSx: "a1", LightGBM: "a3", NHITS_noexog: "a4" }[m]) : css("line");
+  mean.forEach(([m, v], i) => { const j = bt.indexOf(m), hl = ["NHITSx", "LightGBM", "NHITS_noexog", "Chronos2_zs_cov"].includes(m); const c = hl ? css({ NHITSx: "a1", LightGBM: "a3", NHITS_noexog: "a4", Chronos2_zs_cov: "a6" }[m]) : css("line");
     el("line", { x1: xl + 8, x2: xr - 8, y1: T + i * rh, y2: T + j * rh, stroke: c, "stroke-width": hl ? 3 : 1.4 }, s);
     txt(s, xl, T + i * rh + 4, `${i + 1}. ${m} ${v.toFixed(3)}`, { "text-anchor": "end", class: hl ? "t-ink t-b" : "t-ink" });
   });
-  bt.forEach((m, j) => txt(s, xr, T + j * rh + 4, `${j + 1}. ${m}`, { class: ["NHITSx", "LightGBM", "NHITS_noexog"].includes(m) ? "t-ink t-b" : "t-ink" }));
+  bt.forEach((m, j) => txt(s, xr, T + j * rh + 4, `${j + 1}. ${m}`, { class: ["NHITSx", "LightGBM", "NHITS_noexog", "Chronos2_zs_cov"].includes(m) ? "t-ink t-b" : "t-ink" }));
+})();
+}
+
+if (document.querySelector("#figL4")) {
+/* ---------------- Lab 04 foundation models: validation vs test */
+(() => {
+  const V = RS.l4.valid, Te = RS.l4.test, C = m => /^(Chronos|TimesFM)/.test(m) ? "a6" : m === "NHITS" ? "a1" : "muted";
+  const NM = { Chronos2_zs: "Chronos-2 zero-shot", Chronos2_zs_cov: "Chronos-2 + covariates", Chronos2_ft: "Chronos-2 fine-tuned", TimesFM_zs: "TimesFM 2.5 zero-shot", NHITS: "NHITS (default)", SeasonalNaive: "SeasonalNaive" };
+  const ms = Object.keys(Te).sort((a, b) => Te[a][0] - Te[b][0]);
+  const vals = ms.flatMap(m => [V[m][0], Te[m][0]]), lo = Math.floor(Math.min(...vals) * 10) / 10 - 0.05, hi = Math.ceil(Math.max(...vals) * 10) / 10;
+  const W = 900, rh = 34, T = 30, H = T + ms.length * rh + 34, L = 190, R = 130, s = mk("#figL4", W, H), x = lin(lo, hi, L, W - R);
+  ticks(lo, hi, 6).forEach(v => { el("line", { x1: x(v), x2: x(v), y1: T - 8, y2: H - 30, class: "gl" }, s); txt(s, x(v), H - 14, v.toFixed(1), { "text-anchor": "middle" }); });
+  txt(s, (L + W - R) / 2, H - 1, "mean RMSSE ↓", { "text-anchor": "middle" });
+  txt(s, W - R + 12, T - 12, "s per 1,000 series", { class: "t-ink t-b" });
+  ms.forEach((m, i) => {
+    const y0 = T + i * rh + 10, c = C(m), [v, t] = [V[m][0], Te[m][0]];
+    txt(s, L - 10, y0 + 4, NM[m] || m, { "text-anchor": "end", class: "t-ink" + (m === "Chronos2_zs_cov" ? " t-b" : "") });
+    el("line", { x1: x(v), x2: x(t), y1: y0, y2: y0, stroke: css("line"), "stroke-width": 3 }, s);
+    el("circle", { cx: x(v), cy: y0, r: 6, fill: "var(--panel)", stroke: css(c), "stroke-width": 2 }, s);
+    el("rect", { x: x(t) - 5.5, y: y0 - 5.5, width: 11, height: 11, fill: css(c) }, s);
+    txt(s, x(t) - 9, y0 - 9, t.toFixed(3), { "text-anchor": "middle", style: "font-size:10px" });
+    txt(s, W - R + 12, y0 + 4, m === "SeasonalNaive" ? "<0.1" : fmt(V[m][3], 1));
+  });
+  txt(s, L, T - 12, "○ validation (14 weeks before the test)   ■ test (the leaderboard window)", { class: "t-ink" });
+})();
+
+}
+if (document.querySelector("#suiteTable")) {
+/* ---------------- metric suite table */
+(() => {
+  const S = RS.suite, fam = Object.fromEntries(RS.lb.map(r => [r[0], r[4]]));
+  const famOf = m => fam[m] || (m.startsWith("LightGBM") ? "gbm" : m.startsWith("ETS") ? "stat" : "nn");
+  const G = {
+    scaled: [["mean_rmsse", "mean RMSSE", "lo"], ["median_rmsse", "median RMSSE", "lo"], ["mean_mase", "mean MASE", "lo"], ["median_mase", "median MASE", "lo"]],
+    rel: [["avgrelmae", "AvgRelMAE", "lo"], ["avgrelrmse", "AvgRelRMSE", "lo"], ["share_beats_baseline", "share of series beating SeasonalNaive", "hi"]],
+    pct: [["mean_smape", "sMAPE (0–1)", "lo"], ["mean_maape", "MAAPE", "lo"], ["mean_rmsle", "RMSLE", "lo"]],
+    vol: [["pooled_wape", "WAPE", "lo"], ["pooled_mae", "MAE (units/wk)", "lo"], ["pooled_rmse", "RMSE (units/wk)", "lo"]],
+    bias: [["bias_pct", "bias (+ = over)", "zero"], ["share_series_over", "share of series over-forecast", "half"]],
+    type: [["rmsse_smooth", "smooth", "lo"], ["rmsse_erratic", "erratic", "lo"], ["rmsse_intermittent", "intermittent", "lo"], ["rmsse_lumpy", "lumpy", "lo"]],
+    int: [["coverage_80", "coverage 80 %", "t80"], ["coverage_95", "coverage 95 %", "t95"], ["scaled_winkler_80", "Winkler 80 %", "lo"], ["scaled_winkler_95", "Winkler 95 %", "lo"], ["scaled_crps", "scaled CRPS", "lo"]],
+  };
+  const NOTE = {
+    scaled: "Each series' error divided by the error of its own seasonal-naive forecast in training, then averaged. Mean RMSSE is the leaderboard score; the median is the typical item. MASE (absolute errors) rewards predicting zero on intermittent items, RMSSE (squared) does not.",
+    rel: "Geometric mean over series of the model's MAE (or RMSE) divided by SeasonalNaive's, on the test weeks. 0.57 means 43 % less error than copying last year for a typical series.",
+    pct: "Percentage-style errors that stay defined when sales are 0. utilsforecast's sMAPE runs from 0 to 1: double it to compare with the M-competition papers.",
+    vol: "Pooled over all series, so the best sellers count most: the view of total volume.",
+    bias: "Bias is the sum of forecast minus actual over the sum of actuals; + means too much stock. The second column is the share of series whose total forecast is above the total actual.",
+    type: "Mean RMSSE within each Syntetos–Boylan demand type (all 17,238 series). Intermittent and lumpy items carry most of the mean.",
+    int: "Only models that produce intervals. Coverage is a diagnostic (closest to 80 % / 95 % is marked); the Winkler (interval) score and scaled CRPS are proper scores, lower is better. Chronos-2's 80 % intervals cover about what they promise, but a few series with very wide misses inflate its 95 % Winkler score and CRPS; NHITS_MQ has the best proper scores. TimesFM 2.5 has no 95 % interval (it outputs only the 10–90 % quantiles).",
+  };
+  const host = $("#suiteTable"), seg = $("#suiteGroup"), note = $("#suiteNote");
+  let grp = "scaled", sortK = "mean_rmsse", asc = true;
+  const goal = (d, v) => ({ lo: v, hi: -v, zero: Math.abs(v), half: Math.abs(v - .5), t80: Math.abs(v - .8), t95: Math.abs(v - .95) })[d];
+  const f = (k, v) => v == null ? "–" : /^(pooled_mae|pooled_rmse)$/.test(k) ? fmt(v) : /^(coverage|share|bias)/.test(k) || k === "pooled_wape" ? (100 * v).toFixed(1) + " %" : v.toFixed(3);
+  function draw() {
+    const cols = G[grp], dir = Object.fromEntries(cols.map(c => [c[0], c[2]]));
+    if (!cols.some(c => c[0] === sortK)) { sortK = cols[0][0]; asc = true; }
+    let ms = Object.keys(S).filter(m => cols.some(c => S[m][c[0]] != null));
+    ms.sort((a, b) => (asc ? 1 : -1) * (goal(dir[sortK], S[a][sortK]) - goal(dir[sortK], S[b][sortK])));
+    const best = Object.fromEntries(cols.map(([k, , d]) => [k, Math.min(...ms.filter(m => fam[m] !== "ens").map(m => goal(d, S[m][k])))]));
+    host.innerHTML = `<table class="mtable num-right"><thead><tr><th>Model</th>${cols.map(([k, n]) => `<th><button class="sorth" data-k="${k}">${n}${k === sortK ? (asc ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead><tbody>` +
+      ms.map(m => `<tr><td><i class="dot" style="background:var(--${FAM[famOf(m)][0]})"></i>${m}${fam[m] === "ens" ? " *" : ""}</td>${cols.map(([k, , d]) => `<td class="num${fam[m] !== "ens" && S[m][k] != null && goal(d, S[m][k]) === best[k] ? " best" : ""}">${f(k, S[m][k])}</td>`).join("")}</tr>`).join("") + "</tbody></table>";
+    host.querySelectorAll(".sorth").forEach(b => b.addEventListener("click", () => { asc = b.dataset.k === sortK ? !asc : true; sortK = b.dataset.k; draw(); }));
+    note.textContent = NOTE[grp];
+  }
+  seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); grp = b.dataset.v; draw(); }));
+  draw();
 })();
 }
