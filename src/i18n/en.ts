@@ -237,7 +237,7 @@ export const en = {
     sectionTitle: 'Erratum',
     sectionSubtitle: 'Corrections and updates to the published text',
     intro:
-      'We strive for accuracy in all our work. Below you will find any known errors in the published editions along with their corrections. If you believe you have found an error not listed here, please use the Feedback page to let us know.',
+      'We strive for accuracy in all our work. Below you will find any known errors in the published editions along with their corrections. If you believe you have found an error not listed here, please use the Feedback page to let us know. Entries marked as fixed were corrected in the June 2026 eBook; earlier downloads and print copies may still contain them.',
     noErrors: 'No errors have been reported yet for this edition.',
     submitNote:
       'Found an error? Please submit it via our ',
@@ -250,8 +250,13 @@ export const en = {
       error: 'Error',
       correction: 'Correction',
       reported: 'Reported',
+      status: 'Status',
     },
-    // Pages are printed page numbers in the 1st edition PDF.
+    status: {
+      fixed: 'Fixed in current eBook',
+      open: 'Open',
+    },
+    // Pages are printed page numbers in the current 1st edition eBook (3 June 2026 build).
     entries: [
       {
         edition: '1st',
@@ -260,6 +265,16 @@ export const en = {
         error: "‘He is theorist but has tackled...’",
         correction: "Replace with ‘He is a theorist but has tackled...’.",
         reported: '2026-05',
+        status: 'fixed',
+      },
+      {
+        edition: '1st',
+        page: '8',
+        location: "Ch 1, M competitions",
+        error: "‘...M4 (published in 2020)...’",
+        correction: "Replace with ‘M4 (published in 2018)’.",
+        reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -268,6 +283,7 @@ export const en = {
         error: "‘# Update df_imputed dataframe with MICR imputed values’",
         correction: "Replace ‘MICR’ with ‘MICE’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -276,6 +292,7 @@ export const en = {
         error: "‘The multiplicative approach doesn't actually do much for our date...’",
         correction: "Replace ‘our date’ with ‘our data’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -284,6 +301,7 @@ export const en = {
         error: "Days are ordered by first appearance in the data, so the week starts on Tuesday.",
         correction: "Add order=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] to sns.boxplot(...).",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -292,6 +310,7 @@ export const en = {
         error: "Title and x-axis label read ‘Day of Week’ on a by-year plot.",
         correction: "Title should read ‘Sales Distribution by Year’ and the x-axis label ‘Year’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -300,6 +319,7 @@ export const en = {
         error: "‘Any significant spikes at lag k in a PACF plot suggest that a lagged term should be used.’",
         correction: "Replace with: ‘Significant spikes at lag k in a PACF plot suggest that a lagged term may be useful, although a seasonal spike (e.g., lag 7 in daily retail data) is often better handled with day-of-week features.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -308,6 +328,7 @@ export const en = {
         error: "‘...shows that the data is not normally distributed because of its strong seasonal and trend components.’",
         correction: "Replace with: ‘...shows that the data is not normally distributed.’ Trend and seasonality make the series non-stationary; they don't by themselves determine its distribution.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -316,6 +337,7 @@ export const en = {
         error: "‘...if the statistical properties do not change oscillations happen around the same level...’",
         correction: "Replace with ‘...do not change: oscillations happen around the same level...’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -324,6 +346,7 @@ export const en = {
         error: "‘We may use OSS testing...’",
         correction: "Replace ‘OSS’ with ‘OOS’.",
         reported: '2026-08',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -332,6 +355,7 @@ export const en = {
         error: "‘...leaving the training set to test the final model.’",
         correction: "Replace with ‘...leaving the test set to evaluate the final model.’",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -340,6 +364,16 @@ export const en = {
         error: "‘...problematic for sparse data (intermittent demand), where the median does not represent the distribution well.’",
         correction: "Replace ‘where the median does not represent the distribution well’ with ‘where the median can be zero’.",
         reported: '2026-08',
+        status: 'fixed',
+      },
+      {
+        edition: '1st',
+        page: '69',
+        location: "Ch 3, Error metrics",
+        error: "‘While it sounds abstract we’ve used a few examples make concrete:’",
+        correction: "Replace with ‘While it sounds abstract, we’ve used a few examples to make it concrete:’",
+        reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -348,6 +382,25 @@ export const en = {
         error: "The MAPE code uses yt_actuals, yt_A and yt_B, but the code that creates them isn't shown.",
         correction: "Add before the code: t = np.linspace(0, 2, 3); yt_actuals = 0.01 + 0.1 * t; yt_A = 0.02 + 0.1 * t; yt_B = 0.01005 + 0.135 * t + 0.005 * t**2",
         reported: '2026-08',
+        status: 'open',
+      },
+      {
+        edition: '1st',
+        page: '72',
+        location: "Ch 3, Shifted MAPE code",
+        error: "‘print(f'Model B have a shifted MAPE score of {mape_B}')’",
+        correction: "Replace ‘have’ with ‘has’.",
+        reported: '2026-05',
+        status: 'fixed',
+      },
+      {
+        edition: '1st',
+        page: '72',
+        location: "Ch 3, Shifted MAPE code",
+        error: "The code block starts with four Quarto chunk options (#| label..., #| eval: true), the print() calls use curly quotes, and the output isn't shown.",
+        correction: "Ignore the #| lines and use straight quotes: print(f'Model A has a shifted MAPE of {mape_A}'). Output: Model A has a shifted MAPE of 0.9058153972645429; Model B has a shifted MAPE score of 3.685069121162729.",
+        reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -356,22 +409,34 @@ export const en = {
         error: "sMAPE is used throughout the book but never defined.",
         correction: "Add to the callout: ‘sMAPE = (100/n) Σ 2|y_t − ŷ_t| / (|y_t| + |ŷ_t|).’",
         reported: '2026-08',
+        status: 'fixed',
       },
       {
         edition: '1st',
-        page: '75',
-        location: "Ch 3, Squared error",
-        error: "‘...minimizing the SE implicitly assumes that errors follow a Gaussian distribution, which may not be the case.’",
-        correction: "Replace with: ‘...minimizing the SE doesn't assume Gaussian errors; it targets the conditional mean whatever the distribution, and a few large errors can pull that mean around.’ Start a new paragraph at ‘Unlike some normalized metrics’.",
-        reported: '2026-08',
+        page: '74',
+        location: "Ch 3, sMAPE",
+        error: "‘We define {sAPE}(0, 0) = 0.’",
+        correction: "Replace with ‘We define sAPE(0, 0) = 0.’",
+        reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
         page: '76',
+        location: "Ch 3, Squared error",
+        error: "‘...minimizing the SE implicitly assumes that errors follow a Gaussian distribution, which may not be the case.’",
+        correction: "Replace with: ‘...minimizing the SE doesn't assume Gaussian errors; it targets the conditional mean whatever the distribution, and a few large errors can pull that mean around.’ Start a new paragraph at ‘Unlike some normalized metrics’.",
+        reported: '2026-08',
+        status: 'open',
+      },
+      {
+        edition: '1st',
+        page: '77',
         location: "Ch 3, Variations (NRMSE)",
         error: "The NRMSE formula prints as raw equation markup.",
         correction: "NRMSE = RMSE / (max(y) − min(y)) = √((1/n) Σ (y_i − ŷ_i)²) / (max(y) − min(y))",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -380,6 +445,7 @@ export const en = {
         error: "‘We use a rolling projection of the last 28 days of the training data...’",
         correction: "Replace ‘28 days’ with ‘14 days’; the code and results use a 14-day season.",
         reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -388,6 +454,7 @@ export const en = {
         error: "y_t indexes test values in the numerators (t = 1..h) and training values in the denominators (t = 2..T). Labels print twice (‘MASE - MASE =’).",
         correction: "Add to the ‘Where’ list: ‘Numerators sum over the h test periods; denominators sum over the T training observations.’ Read ‘MASE - MASE =’ as ‘MASE =’ (likewise MdMASE and RMSSE).",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -396,6 +463,7 @@ export const en = {
         error: "‘rmsse = np.sqrt(np.mean(squared_errors)) / in_sample_mae’ divides by the in-sample MAE rather than the in-sample MSE.",
         correction: "Replace with: rmsse = np.sqrt(np.mean(squared_errors) / np.mean(np.diff(training_data) ** 2))",
         reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -404,6 +472,7 @@ export const en = {
         error: "RMSSE is printed as 1.1335 and read as the seasonal naive doing worse than the naive forecast.",
         correction: "RMSSE should be 0.8742. Replace the bullet with: ‘RMSSE = 0.8742: Below 1, so on squared errors the seasonal naive forecast's test error is smaller than the in-sample one-step naive error.’",
         reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -412,6 +481,7 @@ export const en = {
         error: "‘An MASE less than 1 indicates that this forecast is performing better than the average naive forecast.’",
         correction: "Replace with: ‘An MASE less than 1 indicates that this forecast's MAE is lower than the in-sample one-step naive MAE on the training data. It doesn't mean it beats our naive forecast over the test period; the relative MAE (1.2753) shows it doesn't.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -420,6 +490,7 @@ export const en = {
         error: "‘...we test this logic next, with a simple naive forecast.’",
         correction: "Replace ‘a simple naive forecast’ with ‘an exponential smoothing (Holt-Winters) forecast’, as shown in Figure 3.19.",
         reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -428,6 +499,7 @@ export const en = {
         error: "Symbols are missing (‘The variables , and are created...’) and the variable names don't match Figure 4.3.",
         correction: "Replace ‘(i.e. x, w1, w2, w01, b1, and b0)’ with ‘(i.e. x1, w1–w6, and b1–b4)’, and the next sentence with: ‘The variables h1, h2, h3, and y are created as a result of mathematical operations, whereas x1 and the weights and biases are initialized by the user.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -436,6 +508,7 @@ export const en = {
         error: "Symbols are missing: ‘the derivative of with respect to into’, ‘For a parameter with learning rate η’, ‘the gradient tells us’, ‘with a learning rate.’",
         correction: "Read: ‘the derivative of y with respect to x into’, ‘For a parameter w_i with learning rate η’, ‘the gradient ∂L/∂w_i tells us’, ‘with a learning rate (η).’ Figure 4.4 is greyscale: blue is the solid line and orange the dashed line.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -444,6 +517,7 @@ export const en = {
         error: "The gradients use w_o1–w_o3, b_o and x, unlike Figure 4.3, and the last line treats b1 as shared by all three hidden nodes.",
         correction: "Read w_o1, w_o2, w_o3, b_o as w4, w5, w6, b4, and x as x1. The last line should be ∂L/∂b1 = 2(y − y_true) · w4, since b1 feeds only h1.",
         reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -452,6 +526,7 @@ export const en = {
         error: "Symbols are missing: ‘Here, represents loss, is the model's output, and represents the parameters...’ and ‘The partial derivative encapsulates..., while holds...’",
         correction: "Read: ‘Here, L represents loss, y is the model's output, and x represents the parameters...’ and ‘The partial derivative ∂L/∂y encapsulates..., while ∂y/∂x holds...’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -460,6 +535,7 @@ export const en = {
         error: "Row label reads ‘MAPE 5’.",
         correction: "Replace with ‘MAPE’.",
         reported: '2026-08',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -468,6 +544,7 @@ export const en = {
         error: "‘...or applying a log transformation (which drops error)...’",
         correction: "Replace ‘(which drops error)’ with ‘(with a bias adjustment when back-transforming)’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -476,6 +553,7 @@ export const en = {
         error: "‘...in practice MAE, MSE , and RMSE, and the relative versions (using native models)...’",
         correction: "Replace with ‘...in practice MAE, MSE, and RMSE, and the relative versions (using naive models)...’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -484,14 +562,16 @@ export const en = {
         error: "‘...the structure of the perceptron and how its structure informed, led to the artificial neuron...’",
         correction: "Replace with ‘...the perceptron and how it led to the artificial neuron...’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
         page: '151-153',
         location: "Ch 6, Figures 6.4, 6.6 and 6.7 (tanh, ReLU, Leaky ReLU)",
-        error: "Derivative curves are wrong: x.grad isn't reset between plots, so each plot adds the earlier functions' gradients (the ReLU derivative peaks near 2.25). Figure 6.6 caption reads ‘RfeLU’.",
-        correction: "In plot_activation_fn_and_derivative(), start with x = x.detach().requires_grad_(True), as in the companion repo. Correct derivatives: tanh peaks at 1; ReLU is 0 for x < 0 and 1 for x > 0; Leaky ReLU is 0.1 and 1. Caption: ‘The ReLU activation function’.",
+        error: "Derivative curves are wrong: x.grad isn't reset between plots, so each plot adds the earlier functions' gradients (the ReLU derivative peaks near 2.25).",
+        correction: "In plot_activation_fn_and_derivative(), start with x = x.detach().requires_grad_(True), as in the companion repo. Correct derivatives: tanh peaks at 1; ReLU is 0 for x < 0 and 1 for x > 0; Leaky ReLU is 0.1 and 1.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -500,6 +580,7 @@ export const en = {
         error: "‘There are a plethora of activation functions in PyTorch we could you that you can look over here’",
         correction: "Replace with: ‘There are plenty of activation functions in PyTorch; you can look over them here’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -508,6 +589,7 @@ export const en = {
         error: "Line styles differ between the two figures, and Adagrad is missing from Figure 6.16.",
         correction: "Each optimizer should use the same line style in both figures, and Figure 6.16 should include Adagrad's validation loss.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -516,6 +598,7 @@ export const en = {
         error: "‘Figure 6.16:Validation loss by optimizer’",
         correction: "Add a space: ‘Figure 6.16: Validation loss by optimizer’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -524,6 +607,7 @@ export const en = {
         error: "‘We simply provide a float value a between 0 and 1’",
         correction: "Delete the stray ‘a’: ‘a float value between 0 and 1’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -532,6 +616,7 @@ export const en = {
         error: "‘...absolute error (AE = y − ŷ)...’",
         correction: "Replace with ‘AE = |y − ŷ|’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -540,6 +625,7 @@ export const en = {
         error: "‘a set of paired training values’ is ambiguous, and the set in Γ is garbled: ‘|{n | i = 1, …, n : f̂_i < f̂_n}|/n < δ’.",
         correction: "Replace ‘paired training values’ with ‘observed (calibration) pairs’, and the condition with ‘|{i ∈ {0, …, n−1} : f_i < f_n}| / n < δ’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -548,6 +634,7 @@ export const en = {
         error: "‘...the upper and lower bounds of an interval, that deem acceptable.’",
         correction: "Replace with ‘...the upper and lower bounds of an interval that we deem acceptable.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -556,6 +643,7 @@ export const en = {
         error: "Step 6 implies the aggregated predictions give the prediction intervals, before the quantile is selected in step 7.",
         correction: "Replace steps 6 and 7 with: ‘6. Select the (1 − α) quantile of the out-of-sample errors. 7. Construct prediction intervals by adding and subtracting this quantile from the aggregated predictions.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -564,6 +652,7 @@ export const en = {
         error: "The legend (‘Can predict (OOB)’, ‘Trained on (excluded)’) belongs to Figure 7.9, and α isn't subscripted in q1-α.",
         correction: "Ignore the legend. Read ‘q1-α’ as q₁₋α (the 1 − α quantile).",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -572,6 +661,7 @@ export const en = {
         error: "The first paragraph on p.208 repeats the end of the previous paragraph.",
         correction: "Delete the paragraph beginning ‘EnbPI achieves approximate exchangeability...’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -580,6 +670,7 @@ export const en = {
         error: "W_i, W_h and b are never defined (also used in Equation 8.2).",
         correction: "Add after Equation 8.1: ‘where W_i is the input weight matrix, W_h the hidden-to-hidden weight matrix, and b the bias.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -588,6 +679,7 @@ export const en = {
         error: "The derivative is written d(t)/dt in the text and in Equation 8.2.",
         correction: "Replace with dh(t)/dt in both places.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -596,6 +688,7 @@ export const en = {
         error: "‘With all the ingredients prepared, we instantiate our model:’ is printed inside the code block.",
         correction: "It's body text, not code.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -604,6 +697,7 @@ export const en = {
         error: "MAPE and sMAPE are reported for a sine wave that crosses zero.",
         correction: "Ignore the MAPE and sMAPE rows; percentage errors aren't meaningful when actuals cross zero. Compare on MAE and MSE.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -612,6 +706,7 @@ export const en = {
         error: "‘...using tahn or ReLU activation functions.’",
         correction: "Replace ‘tahn’ with ‘tanh’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -620,6 +715,7 @@ export const en = {
         error: "‘Figure11. 1: Domain Learning Diagram’ and ‘Figure11.3: Simple GFM model with NeuralForecast’.",
         correction: "Read as ‘Figure 11.1: ...’ and ‘Figure 11.3: ...’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -628,6 +724,7 @@ export const en = {
         error: "‘stack_types=['identity',s 'trend', 'seasonality'],’ raises a SyntaxError.",
         correction: "Replace with: stack_types=['identity', 'trend', 'seasonality'],",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -636,6 +733,7 @@ export const en = {
         error: "‘...the M4 monthly dataset (...), which is retail data.’",
         correction: "Replace ‘which is retail data’ with ‘which mixes demographic, finance, industry, macro, micro, and other series’.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -644,6 +742,7 @@ export const en = {
         error: "‘in this chapter, we introduced...’",
         correction: "Capitalise: ‘In this chapter, we introduced...’.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -652,6 +751,7 @@ export const en = {
         error: "MAPE and sMAPE are reported for a sine wave oscillating between −1 and 1.",
         correction: "Ignore the MAPE and sMAPE rows; percentage errors aren't meaningful when actuals cross zero. Compare on MAE and MSE.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -660,6 +760,7 @@ export const en = {
         error: "WDTW appears in the output without being defined.",
         correction: "Add after the output: ‘WDTW is weighted DTW (Jeong et al., 2011), which replaces the hard window with a logistic penalty on off-diagonal alignments; g (0.1 here) controls how strongly they are penalized.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -668,6 +769,7 @@ export const en = {
         error: "The values are presented side by side as if comparable.",
         correction: "Add: ‘These values aren't on a common scale (aeon's DTW is an accumulated squared cost, Euclidean is an L2 norm, and WDTW's weights shrink every cost), so compare a measure across series, not measures against each other.’",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -676,6 +778,7 @@ export const en = {
         error: "The output compares s1 with its half-amplitude copy (s3), a difference DTW can't correct.",
         correction: "Use the phase-shifted series instead: calculate_distances(s1, s2) gives Euclidean 8.33, DTW 7.12, DTW (window=5%) 23.68, DTW (window=10%) 7.12, WDTW 0.058.",
         reported: '2026-08',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -684,6 +787,16 @@ export const en = {
         error: "An editorial ‘FLAG: Missing k-means code’ note is printed, and the k-means code it refers to is missing (y_kmeans is never created).",
         correction: "Ignore the FLAG note and run this before the next code block: kmeans = KMeans(n_clusters=8, init='k-means++', n_init='auto', random_state=42); y_kmeans = kmeans.fit_predict(X)",
         reported: '2026-05',
+        status: 'fixed',
+      },
+      {
+        edition: '1st',
+        page: '453',
+        location: "Ch 15, Choosing the number of clusters",
+        error: "‘kmeans = KMeans(n_clusters=8, init=’k-means++’, n_init=’auto’, random_state=42)’ uses curly quotes, which Python rejects.",
+        correction: "Replace with: kmeans = KMeans(n_clusters=8, init='k-means++', n_init='auto', random_state=42)",
+        reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -692,6 +805,7 @@ export const en = {
         error: "‘learning_rate=0.00,’ in both models, so neither can train.",
         correction: "Replace with learning_rate=0.001, in both (as in the companion repo).",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -700,6 +814,7 @@ export const en = {
         error: "‘optimizer = optim.Adam(model.parameters(), lr=0.00, weight_decay=1e-5)’ means the model can't train.",
         correction: "Replace with: optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -708,6 +823,16 @@ export const en = {
         error: "Captions read ‘17.12: Isolation Forest unsupervised detection’ and ‘17.13: Isolation Forest on residuals’.",
         correction: "Read as ‘Figure 17.12: ...’ and ‘Figure 17.13: ...’.",
         reported: '2026-05',
+        status: 'fixed',
+      },
+      {
+        edition: '1st',
+        page: '508',
+        location: "Ch 17, Table 17.2 caption",
+        error: "‘Tabe 17.2: Comparing performances’",
+        correction: "Replace ‘Tabe’ with ‘Table’.",
+        reported: '2026-11',
+        status: 'open',
       },
       {
         edition: '1st',
@@ -716,6 +841,7 @@ export const en = {
         error: "Figure numbers repeat: 17.17 is used three times (pp.514, 516, 517) and 17.19 twice (pp.526, 528).",
         correction: "Read p.514 as Figure 17.16, p.516 as 17.17, p.517 as 17.18, p.526 as 17.19 and p.528 as Figure 17.20.",
         reported: '2026-05',
+        status: 'fixed',
       },
       {
         edition: '1st',
@@ -724,6 +850,7 @@ export const en = {
         error: "‘The pipieline in action, looks like this:’",
         correction: "Replace with ‘The pipeline in action looks like this:’.",
         reported: '2026-05',
+        status: 'fixed',
       },
     ] as Array<{
       edition: string;
@@ -732,6 +859,7 @@ export const en = {
       error: string;
       correction: string;
       reported: string;
+      status: 'fixed' | 'open';
     }>,
   },
 
