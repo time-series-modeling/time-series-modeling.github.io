@@ -1,4 +1,5 @@
 import type { Translations } from './en';
+import { en } from './en';
 
 export const zh: Translations = {
   lang: 'zh',
@@ -239,7 +240,7 @@ export const zh: Translations = {
     sectionTitle: '勘误',
     sectionSubtitle: '已出版文本的更正和更新',
     intro:
-      '我们努力确保所有内容的准确性。以下是已出版版本中已知的错误及其更正。如果您认为发现了未在此处列出的错误，请通过反馈页面告知我们。',
+      '我们努力确保所有内容的准确性。以下是已出版版本中已知的错误及其更正。如果您认为发现了未在此处列出的错误，请通过反馈页面告知我们。标记为已更正的条目已在 2026 年 6 月的电子书中更正；更早下载的版本和纸质书可能仍包含这些错误。',
     noErrors: '此版本尚未报告任何错误。',
     submitNote: '发现错误？请通过我们的',
     submitLink: '反馈页面',
@@ -251,8 +252,14 @@ export const zh: Translations = {
       error: '错误',
       correction: '更正',
       reported: '报告日期',
+      status: '状态',
     },
-    entries: [],
+    status: {
+      fixed: '当前电子书已更正',
+      open: '未更正',
+    },
+    // Shares the English entries until translated.
+    entries: en.erratum.entries,
   },
 
   // Feedback
