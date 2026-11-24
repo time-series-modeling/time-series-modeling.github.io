@@ -1,4 +1,5 @@
 import type { Translations } from './en';
+import { en } from './en';
 
 export const zh: Translations = {
   lang: 'zh',
@@ -252,7 +253,8 @@ export const zh: Translations = {
       correction: '更正',
       reported: '报告日期',
     },
-    entries: [],
+    // Shares the English entries until translated.
+    entries: en.erratum.entries,
   },
 
   // Feedback
