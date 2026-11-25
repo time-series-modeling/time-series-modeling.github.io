@@ -40,7 +40,7 @@ const allNhits = R.l7_top3.every((m: string) => m.startsWith('NHITS'));
     <h3>NHITS: coarse to fine, stack by stack</h3>
     <div class="ctrl"><div class="seg" id="nhStack"><button aria-pressed="true" data-v="1">Stack 1 (pool 8)</button><button aria-pressed="false" data-v="2">+ Stack 2 (pool 4)</button><button aria-pressed="false" data-v="3">+ Stack 3 (pool 1)</button></div></div>
     <div class="fig" id="figNH"></div>
-    <p class="cap">Illustration on the smooth example series. Each stack looks at a pooled (blurred) input and outputs a few knots that are interpolated; the next stack models what is left.</p>
+    <p class="cap">Illustration on the smooth example series. Each stack looks at a pooled (blurred) input and outputs a few knots that are interpolated; the next stack models what is left. This shows the design, not a trained network: trained on our items, the stacks are smooth but do not divide the work this neatly.</p>
     <p class="take">The first stack draws the slow shape with a handful of points, the last fills in the weekly wiggles. Cheap, and robust on short noisy series. Lab 01: NHITS {lb.NHITS.toFixed(3)}; Lab 03 with covariates, on the median series, {R.l3_cov.NHITSx[1].toFixed(2)}.</p>
   </div>
 
