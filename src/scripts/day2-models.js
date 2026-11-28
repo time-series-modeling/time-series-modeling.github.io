@@ -738,3 +738,88 @@ if (document.querySelector("#figFMmask")) {
     txt(s, X0 + 24 * (bw + bg) + 6, r.y + 20, r.name === "t0-gamma" ? "16 T + 8 V" : "24 T + 6 V", { class: "t-ink" });
   });
 }
+
+/* ---------------- how one forecasting task enters each foundation model
+   Schematic: 4 context patches + 2 horizon patches per row. Behaviour per model follows the Chronos-2 report
+   (§3.1–3.4), the TimesFM 2.5 code (univariate decoder + XReg), and the t0 / Timestral codes. */
+if (document.querySelector("#figFMtask")) {
+  let model = "ch", task = "uni";
+  const NC = 4, NH = 2;
+  const ROWS = {
+    uni: [{ n: "target y", r: "y", c: "a1" }],
+    multi: [{ n: "target y₁", r: "y", c: "a1" }, { n: "target y₂", r: "y", c: "a1" }, { n: "target y₃", r: "y", c: "a1" }],
+    cov: [{ n: "target y", r: "y", c: "a1" }, { n: "past-only x", r: "x", c: "a3" }, { n: "known-future z", r: "z", c: "a4" }],
+  };
+  const TXT = {
+    ch: {
+      uni: "One row, one group. Scaled with its context mean and standard deviation, then asinh; 16-step patches with a time-index and mask channel; a REG token separates context from the empty future patches. Time attention runs both ways over everything; the future patch tokens are decoded into 21 quantiles.",
+      multi: "All three variates get the same group id. In every one of the 12 blocks, group attention mixes the three rows at each patch position (no order among them), so the forecasts are joint. Give each variate its own id and you get three univariate forecasts instead.",
+      cov: "Target, past-only and known-future rows share one group. The past-only row's future patches are masked like the target's; the known-future row's future patches hold the planned values. Group attention lets the target read both, in both directions; the model's outputs for covariate rows are ignored.",
+    },
+    tf: {
+      uni: "One row, read left to right. Values and a padding mask go through a residual block into 32-step tokens; 20 causal layers; the last token predicts the next 128 steps (mean + 9 quantiles). Longer horizons append the forecast and decode again.",
+      multi: "TimesFM 2.5 has no cross-variate attention: the three variates are three separate forecasts, each blind to the others.",
+      cov: "Covariates never enter the network. XReg fits a ridge linear regression of y on the known-future z over the context; by default TimesFM then forecasts what the regression leaves over, and the two are added. Past-only x cannot be used: XReg needs covariate values over the horizon.",
+    },
+    t0: {
+      uni: "One row. Causal running scaling and arcsinh; 32-step patches with values, a within-patch time index and validity flags; a role vector is added. The horizon is appended as blanked patches; each token predicts the next patch, so the last context patch and the blanked ones together cover the horizon in one pass.",
+      multi: "The three rows share a group id. Time attention is causal within each row; every third layer is variate attention across the rows at each patch position, where targets read each other.",
+      cov: "x is blanked over the horizon like y; z carries its planned values. In time attention z looks both ways along its row; in variate attention y and x read z and each other, but z reads only other known-future rows, which closes the two-hop leak.",
+    },
+    ts: {
+      uni: "One row of causal context tokens (values + missing flags, 32 steps) and, over the horizon, prediction tokens: copies of one learned vector. Prediction tokens read the context; context never reads them. The target's prediction token at patch j is decoded into patch j's 21 quantiles.",
+      multi: "The three rows share a group id. Every fourth block adds variate attention: context tokens mix with context tokens, prediction tokens with prediction tokens, at the same position.",
+      cov: "Covariates are extra rows. z also has context tokens over the horizon with its planned values and reads its whole row; it reads only other known-future rows. x reads covariates but never the target. Only the target's prediction tokens are decoded.",
+    },
+  };
+  function draw() {
+    const rows = ROWS[task], W = 920, X0 = 150, cw = 78, gap = 6, rh = 30, rg = 10, T0 = 34;
+    const sep = model === "ch" ? 34 : 14, cx = i => X0 + i * (cw + gap) + (i >= NC ? sep : 0);
+    const H = T0 + rows.length * (rh + rg) + 44, s = mk("#figFMtask", W, H);
+    arrowDefs(s, "fc-ah");
+    txt(s, (cx(0) + cx(NC - 1) + cw) / 2, 18, model === "ch" ? "context (16-step patches)" : "context (32-step patches)", { "text-anchor": "middle", class: "t-ink t-b" });
+    txt(s, (cx(NC) + cx(NC + NH - 1) + cw) / 2, 18, "forecast horizon", { "text-anchor": "middle", class: "t-ink t-b" });
+    const xo = cx(NC) - (model === "ch" ? sep / 2 + 3 : 10);
+    el("line", { x1: xo, x2: xo, y1: 24, y2: T0 + rows.length * (rh + rg), stroke: css("muted"), "stroke-dasharray": "4 3" }, s);
+    const xreg = model === "tf" && task === "cov";
+    rows.forEach((rw, k) => {
+      const y = T0 + k * (rh + rg), unused = xreg && rw.r === "x", isCov = xreg && rw.r === "z";
+      txt(s, 8, y + rh / 2 + 4, rw.n, { style: `fill:var(--${rw.c})` });
+      if (model === "ch") { el("rect", { x: cx(NC) - sep + 3, y, width: sep - 12, height: rh, rx: 4, fill: css("grid"), stroke: css("muted") }, s); if (k === rows.length - 1) txt(s, cx(NC) - sep / 2 - 3, y + rh + 14, "REG token", { "text-anchor": "middle" }); }
+      for (let i = 0; i < NC + NH; i++) {
+        const fut = i >= NC;
+        let lab = "data", dash = false, on = true;
+        if (fut) {
+          if (model === "tf") { lab = rw.r === "y" ? "forecast" : ""; on = rw.r === "y"; }
+          else if (model === "ts") lab = rw.r === "z" ? "known + p" : "p";
+          else if (model === "t0") { lab = rw.r === "z" ? "known" : "blanked"; dash = rw.r !== "z"; }
+          else { lab = rw.r === "z" ? "known" : "masked"; dash = rw.r !== "z"; }
+        }
+        if (unused || isCov) { on = false; lab = fut ? (isCov ? "known" : "") : "data"; }
+        if (!lab && fut) continue;
+        el("rect", { x: cx(i), y, width: cw, height: rh, rx: 6, fill: on ? `color-mix(in srgb,var(--${rw.c}) ${fut ? 12 : 24}%,var(--panel))` : css("panel"), stroke: on ? css(rw.c) : css("line"), "stroke-width": 1.4, ...(dash ? { "stroke-dasharray": "4 3" } : {}) }, s);
+        txt(s, cx(i) + cw / 2, y + rh / 2 + 4, lab, { "text-anchor": "middle", class: on ? "t-ink" : "", opacity: on ? 1 : .5 });
+      }
+      if (unused) txt(s, cx(NC) + 8, y + rh / 2 + 4, "not used", { class: "t-ink" });
+    });
+    const right = cx(NC + NH - 1) + cw + 12, yb = T0 + rows.length * (rh + rg) - rg;
+    if (xreg) {
+      el("rect", { x: right, y: T0 + 2 * (rh + rg) - 30, width: W - right - 6, height: 60, rx: 8, fill: css("soft"), stroke: css("a2") }, s);
+      txt(s, right + (W - right - 6) / 2, T0 + 2 * (rh + rg) - 6, "XReg: ridge linear", { "text-anchor": "middle", class: "t-ink t-b" });
+      txt(s, right + (W - right - 6) / 2, T0 + 2 * (rh + rg) + 10, "regression, outside", { "text-anchor": "middle" });
+      txt(s, right + (W - right - 6) / 2, T0 + 2 * (rh + rg) + 24, "the network", { "text-anchor": "middle" });
+      el("path", { d: `M${right + 40},${T0 + 2 * (rh + rg) - 30}L${right + 40},${T0 + rh / 2}L${right + 2},${T0 + rh / 2}`, fill: "none", stroke: css("a2"), "stroke-width": 1.6, "marker-end": "url(#fc-ah)" }, s);
+      txt(s, right + 46, T0 + rh + 10, "+ its forecast", { style: "fill:var(--a2)" });
+    } else if (rows.length > 1) {
+      const lab = model === "tf" ? ["no link between rows:", "3 separate forecasts"] : model === "ch" ? ["one group: group", "attention, every block"] : model === "t0" ? ["variate attention,", "every 3rd layer"] : ["variate attention,", "every 4th block"];
+      if (model !== "tf") el("path", { d: `M${right},${T0 + 2}L${right + 10},${T0 + 2}L${right + 10},${yb - 2}L${right},${yb - 2}`, fill: "none", stroke: css("a4"), "stroke-width": 2 }, s);
+      lab.forEach((l, i) => txt(s, right + 18, (T0 + yb) / 2 - 4 + i * 14, l, { class: "t-ink" }));
+    }
+    const dirs = { ch: "time attention: both directions", tf: "time attention: causal", t0: "time attention: causal (known-future rows both ways)", ts: "time attention: causal; prediction tokens read the context" };
+    txt(s, X0, H - 14, dirs[model], { style: "fill:var(--a2)" });
+    $("#fcOut").innerHTML = TXT[model][task];
+  }
+  seg("#fcModel", v => { model = v; draw(); });
+  seg("#fcTask", v => { task = v; draw(); });
+  draw();
+}
