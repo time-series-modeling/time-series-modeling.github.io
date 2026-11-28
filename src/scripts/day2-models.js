@@ -305,8 +305,8 @@ if (document.querySelector("#figTF")) {
   const CAP = [
     "TimesFM cuts the history into patches of 32 weeks. Our 93 weeks become 3 patches; the first 3 weeks are padding and masked out. Each patch is embedded into one token.",
     "Decoder-only: each token may only look at itself and the tokens before it (the triangle). Token 2 never sees patch 3. This is how GPT-style language models read text.",
-    "In training every token predicts the next 128 steps after its own 32-step patch. The output (128) is 4× longer than the input patch (32), so token 1's target covers all of patch 2, all of patch 3 and beyond, and the targets of neighbouring tokens overlap. Solid parts have true values to learn from; dashed parts lie past the end of this series. One pass gives a forecast from every position at once.",
-    "At forecast time the last token outputs a long output patch (128 steps in TimesFM 2.5) with a median and quantiles. We keep the first 14 weeks. Shown here is an illustrative fan, not a TimesFM run.",
+    "In training every token predicts the next 128 steps after its own 32-step patch. The output (128) is 4× longer than the input patch (32), so token 1's target covers all of patch 2, all of patch 3 and beyond, and the targets of neighbouring tokens overlap. Solid parts have true values to learn from; dashed parts lie past the end of this series. One pass gives a forecast from every position at once. (This training recipe is from the TimesFM 1.0 paper; Google has not published how 2.5 was trained, but 2.5 keeps the same 32-step input and 128-step output patches.)",
+    "At forecast time the last token outputs the next 128 steps: a point forecast and 9 quantiles (10 % to 90 %). We keep the first 14 weeks. For a horizon longer than 128, TimesFM 2.5 feeds the median of those 128 steps back in as 4 new patches and runs again. Shown here is an illustrative fan, not a TimesFM run.",
   ];
   let st = 0, t0 = 0;
   function draw() {
@@ -893,7 +893,7 @@ if (document.querySelector("#figST")) {
       title: "Chronos-2: encoder-only, everything reads everything" },
     tf: { toks: ["c", "c", "c", "c"], lab: ["p1", "p2", "p3", "p4"],
       sees: (i, j) => j <= i, out: () => "next 128 steps", hi: i => i === 3,
-      title: "TimesFM 2.5: decoder-only, causal" },
+      title: "TimesFM 2.5: decoder-only, causal (20 layers, 1,280 wide)" },
     t0: { toks: ["c", "c", "c", "c", "w", "w"], lab: ["p1", "p2", "p3", "p4", "blank5", "blank6"],
       sees: (i, j) => j <= i, out: i => `patch ${i + 2}`, hi: i => i === 3 || i === 4,
       title: "t0-gamma: decoder-style, causal, horizon appended as blank patches" },
@@ -910,8 +910,8 @@ if (document.querySelector("#figST")) {
       "<b>Training.</b> Each example is split into a context and a future window; the quantile loss is computed on the future window only. One forecast origin per example.",
       "<b>Forecasting.</b> One pass. The head reads the future tokens and outputs 21 quantiles for every forecast step at once (multi-patch output), so there is no loop for horizons the model supports."],
     tf: ["<b>Stack.</b> 20 causal transformer layers, like a GPT. Token <i>j</i> reads tokens 1..<i>j</i> only. There are no future tokens: the series simply ends.",
-      "<b>Training.</b> Every token predicts the <b>128</b> steps that follow its own 32-step patch, all in one pass: patch 1 forecasts steps 33–160, patches 1–2 forecast 65–192, and so on (TimesFM paper §4). One series gives many training forecasts, one per position.",
-      "<b>Forecasting.</b> Read the context once and take the output of the <b>last</b> token: the next 128 steps. For a longer horizon, append those 128 predicted steps as 4 new patches and run again (autoregressive). Our 14-week horizon needs one pass."],
+      "<b>Training.</b> Every token predicts the <b>128</b> steps that follow its own 32-step patch, all in one pass: patch 1 forecasts steps 33–160, patches 1–2 forecast 65–192, and so on. One series gives many training forecasts, one per position. This is the recipe in the TimesFM paper, which describes version 1.0; 2.5 has no paper, but its code keeps the 32-in / 128-out design.",
+      "<b>Forecasting.</b> Read the context (up to 16k steps in 2.5) once and take the output of the <b>last</b> token: the next 128 steps. For a longer horizon, the median of those 128 steps is appended as 4 new patches and the model runs again (autoregressive, in the 2.5 code). Our 14-week horizon needs one pass."],
     t0: ["<b>Stack.</b> 24 layers (time, time, variate) × 8. Time attention is causal for the target and past covariates, like a decoder; known-future covariates read their whole row in both directions.",
       "<b>Training.</b> Each token predicts the next 32-step patch (teacher forcing). Contiguous spans of patches are also blanked at random, so the model learns to fill in or continue past missing stretches (contiguous patch masking, t0 report §2).",
       "<b>Forecasting.</b> The horizon is appended as blank (withheld) patches. The last context token forecasts horizon patch 1, the first blank token forecasts patch 2, and so on, all in one pass up to the maximum horizon; beyond it the model continues autoregressively (<code>t0/rollout.py</code>)."],
