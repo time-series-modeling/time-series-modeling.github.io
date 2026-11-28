@@ -270,8 +270,8 @@ if (document.querySelector("#figCOV")) {
 /* ---------------- Chronos-2 */
 if (document.querySelector("#figCH")) {
   const IN = 64, P = 16, y = SM.y.slice(TEST0 - IN, TEST0), pr = SM.price.slice(TEST0 - IN, TEST0 + HZ), pm = SM.promo.slice(TEST0 - IN, TEST0 + HZ);
-  const sc = y.reduce((a, b) => a + Math.abs(b), 0) / IN, ys = y.map(v => v / sc);
-  const CAP = ["Divide the history by its mean absolute value, so every series in the world looks the same size to the model.", "Cut the scaled history into patches of 16 weeks. Each patch becomes one token, like a word in a sentence.", "Known future covariates (price, promotion) get their own rows of tokens, covering the forecast weeks too. Group attention lets the series and its covariates read each other.", "Forecast tokens attend to every past patch and to the covariates: which earlier stretches look like what comes next?", "The model outputs quantiles for every forecast week at once, then undoes the scaling. Shown here is an illustrative fan, not a Chronos-2 run."];
+  const mu = y.reduce((a, b) => a + b, 0) / IN, sd = Math.sqrt(y.reduce((a, b) => a + (b - mu) ** 2, 0) / IN) || 1, ys = y.map(v => Math.asinh((v - mu) / sd) + 3);
+  const CAP = ["Standardise the history with its own mean and standard deviation, then apply arcsinh to tame large values, so every series in the world looks the same size to the model (Chronos-2 report §3.1).", "Cut the scaled history into patches of 16 weeks. Each patch becomes one token, like a word in a sentence.", "Known future covariates (price, promotion) get their own rows of tokens, covering the forecast weeks too. Group attention lets the series and its covariates read each other.", "Forecast tokens attend to every past patch and to the covariates: which earlier stretches look like what comes next?", "The model outputs quantiles for every forecast week at once, then undoes the scaling. Shown here is an illustrative fan, not a Chronos-2 run."];
   let st = 0, t0 = 0;
   function draw() {
     const W = 900, H = 300, L = 70, R = 12, s = mk("#figCH", W, H), x = lin(0, IN + HZ, L, W - R);
@@ -305,7 +305,7 @@ if (document.querySelector("#figTF")) {
   const CAP = [
     "TimesFM cuts the history into patches of 32 weeks. Our 93 weeks become 3 patches; the first 3 weeks are padding and masked out. Each patch is embedded into one token.",
     "Decoder-only: each token may only look at itself and the tokens before it (the triangle). Token 2 never sees patch 3. This is how GPT-style language models read text.",
-    "In pretraining every token learns to predict the stretch that follows its own patch. So the model trains on many forecasts per series at once.",
+    "In training every token predicts the next 128 steps after its own 32-step patch. The output (128) is 4× longer than the input patch (32), so token 1's target covers all of patch 2, all of patch 3 and beyond, and the targets of neighbouring tokens overlap. Solid parts have true values to learn from; dashed parts lie past the end of this series. One pass gives a forecast from every position at once.",
     "At forecast time the last token outputs a long output patch (128 steps in TimesFM 2.5) with a median and quantiles. We keep the first 14 weeks. Shown here is an illustrative fan, not a TimesFM run.",
   ];
   let st = 0, t0 = 0;
@@ -322,7 +322,7 @@ if (document.querySelector("#figTF")) {
       txt(s, x(k * P + P / 2), 168, `token ${k + 1}`, { "text-anchor": "middle", style: "fill:var(--panel)" });
     }
     txt(s, x(0), 11, "padding", {});
-    if (st >= 1) {
+    if (st === 1 || st === 3) {
       // causal arcs: token k attends to tokens j <= k
       const a = (t0 % 60) / 60;
       for (let k = 1; k < NP; k++) for (let j = 0; j < k; j++) {
@@ -338,12 +338,15 @@ if (document.querySelector("#figTF")) {
       txt(s, mx0, my0 + NP * cs + 32, "row reads columns", {});
       }
     }
-    if (st === 2) for (let k = 0; k < NP - 1; k++) {
-      const x0 = x((k + 1) * P), x1 = x(Math.min((k + 1) * P + 24, NP * P));
-      el("rect", { x: x0, y: 20, width: x1 - x0, height: 120, fill: "color-mix(in srgb,var(--a2) 18%,transparent)", stroke: css("a2"), "stroke-dasharray": "4 3" }, s);
-      el("path", { d: `M${x(k * P + P / 2)},154 C${x(k * P + P / 2)},120 ${x0 + 10},150 ${x0 + 10},140`, fill: "none", stroke: css("a2"), "stroke-width": 1.8 }, s);
-      txt(s, (x0 + x1) / 2, 34, `target for token ${k + 1}`, { "text-anchor": "middle", style: "fill:var(--a2)" });
+    if (st === 2) for (let k = 0; k < NP; k++) {
+      // token k+1 is trained to predict the 128 steps after its own patch (TimesFM paper §4, eq. 4)
+      const a = (k + 1) * P, b = a + 128, end = NP * P + OUT, ly = 184 + k * 21;
+      const xa = x(Math.min(a, end)), xd = x(Math.min(b, NP * P)), xe = x(Math.min(b, end));
+      if (a < NP * P) el("rect", { x: xa, y: ly, width: xd - xa, height: 16, fill: "color-mix(in srgb,var(--a2) 35%,transparent)", stroke: css("a2"), rx: 3 }, s);
+      el("rect", { x: x(Math.max(a, NP * P)), y: ly, width: xe - x(Math.max(a, NP * P)), height: 16, fill: "none", stroke: css("a2"), "stroke-dasharray": "4 3", rx: 3 }, s);
+      txt(s, xe + 4, ly + 12, `token ${k + 1} → steps ${a + 1}–${b}`, { style: "fill:var(--a2)" });
     }
+    if (st === 2) { txt(s, x(NP * P) + 4, 178, "past the data", { style: "fill:var(--muted)" }); }
     if (st === 3) {
       const lvl = y.slice(-8).reduce((p, q) => p + q, 0) / 8, med = Array.from({ length: OUT }, (_, i) => lvl * (1 - .08 * Math.sin(i / 3)));
       const poly = w => { const up = med.map((v, i) => [x(NP * P + i + .5), yy(v * (1 + w * (1 + i / 14)))]), lo = med.map((v, i) => [x(NP * P + i + .5), yy(Math.max(0, v * (1 - w * (1 + i / 14))))]).reverse(); return path(up) + "L" + lo.map(p => p.join(",")).join("L") + "Z"; };
@@ -822,4 +825,131 @@ if (document.querySelector("#figFMtask")) {
   seg("#fcModel", v => { model = v; draw(); });
   seg("#fcTask", v => { task = v; draw(); });
   draw();
+}
+
+/* ---------------- attention in one picture: full vs causal */
+if (document.querySelector("#figAT")) {
+  const NPAT = 5, PL = 16, y = SM.y.slice(TEST0 - NPAT * PL, TEST0);
+  // per patch: level and slope, standardised across patches, then unit length
+  const feat = Array.from({ length: NPAT }, (_, k) => {
+    const s = y.slice(k * PL, k * PL + PL), m = s.reduce((a, b) => a + b, 0) / PL;
+    const tm = (PL - 1) / 2; let num = 0, den = 0; s.forEach((v, i) => { num += (i - tm) * (v - m); den += (i - tm) ** 2; });
+    return [m, num / den];
+  });
+  const z = j => { const c = feat.map(f => f[j]), mu = c.reduce((a, b) => a + b, 0) / NPAT, sd = Math.sqrt(c.reduce((a, b) => a + (b - mu) ** 2, 0) / NPAT) || 1; return c.map(v => (v - mu) / sd); };
+  const L0 = z(0), S0 = z(1), vec = L0.map((l, k) => { const n = Math.hypot(l, S0[k]) || 1; return [l / n, S0[k] / n]; });
+  let q = NPAT - 1, mode = "full";
+  function weights(qi) {
+    const sc = vec.map(k => 3 * (vec[qi][0] * k[0] + vec[qi][1] * k[1]));
+    const ok = sc.map((_, j) => mode === "full" || j <= qi);
+    const ex = sc.map((v, j) => ok[j] ? Math.exp(v) : 0), Z = ex.reduce((a, b) => a + b, 0);
+    return { sc, ok, w: ex.map(v => v / Z) };
+  }
+  function draw() {
+    const W = 900, H = 330, L = 30, R = 300, s = mk("#figAT", W, H), x = lin(0, NPAT * PL, L, W - R);
+    const mx = Math.max(...y) * 1.1, yy = lin(0, mx, 120, 16);
+    const { sc, ok, w } = weights(q);
+    el("path", { d: path(y.map((v, i) => [x(i + .5), yy(v)])), fill: "none", stroke: css("ink"), "stroke-width": 1.6 }, s);
+    for (let k = 0; k < NPAT; k++) {
+      const x0 = x(k * PL) + 3, ww = x(PL) - x(0) - 6, isq = k === q;
+      el("rect", { x: x0, y: 10, width: ww, height: 116, fill: "none", stroke: css(isq ? "a2" : "a1"), "stroke-width": isq ? 2.5 : 1.2, rx: 4 }, s);
+      const g = el("g", { role: "button", tabindex: 0, style: "cursor:pointer", "aria-label": `make patch ${k + 1} the query` }, s);
+      el("rect", { x: x0 + 8, y: 136, width: ww - 16, height: 24, rx: 5, fill: css(isq ? "a2" : "a1"), opacity: ok[k] || isq ? 1 : .25 }, g);
+      txt(g, x0 + ww / 2, 152, isq ? `query ${k + 1}` : `token ${k + 1}`, { "text-anchor": "middle", style: "fill:var(--panel)" });
+      g.addEventListener("click", () => { q = k; draw(); });
+      g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); q = k; draw(); } });
+      // weight bar
+      const bx = x0 + 8, bw = ww - 16, by = 176, bh = 90;
+      el("rect", { x: bx, y: by, width: bw, height: bh, fill: "color-mix(in srgb,var(--muted) 10%,transparent)", rx: 3 }, s);
+      if (ok[k]) el("rect", { x: bx, y: by + bh * (1 - w[k]), width: bw, height: bh * w[k], fill: css("a2"), opacity: .85, rx: 3 }, s);
+      txt(s, bx + bw / 2, by + bh + 16, ok[k] ? `w = ${w[k].toFixed(2)}` : "blocked", { "text-anchor": "middle", style: ok[k] ? "" : "fill:var(--muted)" });
+      txt(s, bx + bw / 2, by + bh + 32, `score ${sc[k].toFixed(1)}`, { "text-anchor": "middle", style: "fill:var(--muted)" });
+      if (ok[k] && k !== q) { const xs_ = x(k * PL + PL / 2), xe = x(q * PL + PL / 2); el("path", { d: `M${xs_},134 Q${(xs_ + xe) / 2},${100 - 30 * Math.abs(k - q) / NPAT} ${xe},134`, fill: "none", stroke: css("a2"), "stroke-width": .6 + 8 * w[k], opacity: .7 }, s); }
+    }
+    txt(s, L, by_ = 172, "attention weights of the query (they sum to 1)", { style: "fill:var(--muted)" });
+    // full weight matrix
+    const mx0 = W - R + 60, cs = 34, my0 = 40;
+    txt(s, mx0, my0 - 14, mode === "full" ? "all queries, full attention" : "all queries, causal mask", {});
+    for (let r = 0; r < NPAT; r++) { const wr = weights(r); for (let c = 0; c < NPAT; c++) { const on = wr.ok[c]; el("rect", { x: mx0 + c * cs, y: my0 + r * cs, width: cs - 3, height: cs - 3, rx: 3, fill: on ? "var(--a2)" : "color-mix(in srgb,var(--muted) 15%,transparent)", opacity: on ? .15 + .85 * wr.w[c] : 1, stroke: r === q ? css("ink") : "none", "stroke-width": 1.2 }, s); if (on) txt(s, mx0 + c * cs + cs / 2 - 1.5, my0 + r * cs + 21, wr.w[c].toFixed(2).replace(/^0/, ""), { "text-anchor": "middle", style: "font-size:10px" }); } }
+    for (let r = 0; r < NPAT; r++) { txt(s, mx0 - 6, my0 + r * cs + 21, `${r + 1}`, { "text-anchor": "end" }); txt(s, mx0 + r * cs + cs / 2 - 1.5, my0 + NPAT * cs + 14, `${r + 1}`, { "text-anchor": "middle" }); }
+    txt(s, mx0, my0 + NPAT * cs + 32, "row = query, column = key", { style: "fill:var(--muted)" });
+    const terms = w.map((v, j) => ok[j] ? `${v.toFixed(2)}·v${j + 1}` : null).filter(Boolean).join(" + ");
+    $("#atOut").innerHTML = `new token ${q + 1} = ${terms}` + (mode === "causal" && q < NPAT - 1 ? `   (tokens ${q + 2}–${NPAT} are later in time: blocked)` : "");
+  }
+  let by_;
+  seg("#atMode", v => { mode = v; draw(); }); draw();
+}
+
+/* ---------------- encoder-decoder, encoder-only, decoder-only */
+if (document.querySelector("#figST")) {
+  // token kinds: c context, r REG, f future placeholder, w withheld horizon patch, p prediction token, d decoder output token
+  const M = {
+    ed: { toks: ["c", "c", "c", "c", "d", "d", "d"], lab: ["x1", "x2", "x3", "x4", "out1", "out2", "out3"],
+      sees: (i, j, t) => t[i] === "c" ? t[j] === "c" : (t[j] === "c" || j <= i),
+      out: (i, t) => t[i] === "d" ? "next value" : null, hi: i => i === 6,
+      title: "Encoder-decoder (original Transformer; Chronos 1 uses T5)" },
+    ch: { toks: ["c", "c", "c", "c", "r", "f", "f"], lab: ["p1", "p2", "p3", "p4", "REG", "f1", "f2"],
+      sees: () => true, out: (i, t) => t[i] === "f" ? `patch ${i - 4 + 4}` : null, hi: (i, t) => t[i] === "f",
+      title: "Chronos-2: encoder-only, everything reads everything" },
+    tf: { toks: ["c", "c", "c", "c"], lab: ["p1", "p2", "p3", "p4"],
+      sees: (i, j) => j <= i, out: () => "next 128 steps", hi: i => i === 3,
+      title: "TimesFM 2.5: decoder-only, causal" },
+    t0: { toks: ["c", "c", "c", "c", "w", "w"], lab: ["p1", "p2", "p3", "p4", "blank5", "blank6"],
+      sees: (i, j) => j <= i, out: i => `patch ${i + 2}`, hi: i => i === 3 || i === 4,
+      title: "t0-gamma: decoder-style, causal, horizon appended as blank patches" },
+    ts: { toks: ["c", "c", "c", "c", "p", "p"], lab: ["p1", "p2", "p3", "p4", "pred5", "pred6"],
+      sees: (i, j, t) => t[i] === "c" ? (t[j] === "c" && j <= i) : (t[j] === "c" || j <= i),
+      out: (i, t) => t[i] === "p" ? `patch ${i + 1}` : null, hi: (i, t) => t[i] === "p",
+      title: "Timestral: causal context + separate prediction tokens" },
+  };
+  const TXT = {
+    ed: ["<b>Stack.</b> An encoder reads the context with full attention. A separate decoder generates the output one token at a time: it reads its own earlier outputs causally and reads all encoder tokens through cross-attention (the left block of the grid).",
+      "<b>Training.</b> Each decoder token learns to predict the next output token (teacher forcing: the true previous value is fed in).",
+      "<b>Forecasting.</b> One full decoder pass per output token: predict, append, repeat. Chronos 1 turns each value into one of 4,096 bins and samples paths this way, so long horizons are slow."],
+    ch: ["<b>Stack.</b> 12 T5-encoder blocks, each with time attention and group attention, no causal mask. The context patches, a REG separator token and placeholder patches for the forecast window all read each other. The future placeholders carry the known-future covariate values and a mask saying the target is missing there.",
+      "<b>Training.</b> Each example is split into a context and a future window; the quantile loss is computed on the future window only. One forecast origin per example.",
+      "<b>Forecasting.</b> One pass. The head reads the future tokens and outputs 21 quantiles for every forecast step at once (multi-patch output), so there is no loop for horizons the model supports."],
+    tf: ["<b>Stack.</b> 20 causal transformer layers, like a GPT. Token <i>j</i> reads tokens 1..<i>j</i> only. There are no future tokens: the series simply ends.",
+      "<b>Training.</b> Every token predicts the <b>128</b> steps that follow its own 32-step patch, all in one pass: patch 1 forecasts steps 33–160, patches 1–2 forecast 65–192, and so on (TimesFM paper §4). One series gives many training forecasts, one per position.",
+      "<b>Forecasting.</b> Read the context once and take the output of the <b>last</b> token: the next 128 steps. For a longer horizon, append those 128 predicted steps as 4 new patches and run again (autoregressive). Our 14-week horizon needs one pass."],
+    t0: ["<b>Stack.</b> 24 layers (time, time, variate) × 8. Time attention is causal for the target and past covariates, like a decoder; known-future covariates read their whole row in both directions.",
+      "<b>Training.</b> Each token predicts the next 32-step patch (teacher forcing). Contiguous spans of patches are also blanked at random, so the model learns to fill in or continue past missing stretches (contiguous patch masking, t0 report §2).",
+      "<b>Forecasting.</b> The horizon is appended as blank (withheld) patches. The last context token forecasts horizon patch 1, the first blank token forecasts patch 2, and so on, all in one pass up to the maximum horizon; beyond it the model continues autoregressively (<code>t0/rollout.py</code>)."],
+    ts: ["<b>Stack.</b> 24 blocks. Context tokens attend causally to the context only, so each context token summarises the series up to its patch. Separate learned prediction tokens sit at the forecast positions; they read the context before the forecast block and the earlier prediction tokens of the same block.",
+      "<b>Training.</b> Decoupled Horizon Forecasting: forecast blocks are placed at several origins in one sequence. Each observed value is both a target for an earlier origin and context for a later one, without masking out context.",
+      "<b>Forecasting.</b> One pass: each prediction token outputs 21 quantiles for its own 32-step patch. Timestral's report calls this a causal encoder-only model."],
+  };
+  let m = "ch";
+  function draw() {
+    const W = 900, H = 300, s = mk("#figST", W, H), d = M[m], t = d.toks, n = t.length;
+    const x0 = 30, sp = 70, tw = 60, ty = 190;
+    const col = k => ({ c: "a1", r: "muted", f: "a2", w: "a2", p: "a2", d: "a3" })[k];
+    txt(s, x0, 22, d.title, { class: "t-ink", style: "font-weight:600" });
+    if (m === "ed") { txt(s, x0 + 2 * sp + tw / 2 - 30, ty + 52, "encoder", { "text-anchor": "middle", style: "fill:var(--a1)" }); txt(s, x0 + 5 * sp + tw / 2, ty + 52, "decoder", { "text-anchor": "middle", style: "fill:var(--a3)" }); }
+    else { const nc = t.filter(k => k === "c").length; txt(s, x0 + (nc - 1) * sp / 2 + tw / 2, ty + 52, "context (what we observed)", { "text-anchor": "middle", style: "fill:var(--a1)" }); if (n > nc) txt(s, x0 + (nc + (n - 1)) * sp / 2 + tw / 2, ty + 52, m === "ch" ? "separator + future" : "forecast window", { "text-anchor": "middle", style: "fill:var(--a2)" }); }
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * sp, dashed = t[i] === "f" || t[i] === "w" || t[i] === "p";
+      el("rect", { x, y: ty, width: tw, height: 30, rx: 5, fill: dashed ? "color-mix(in srgb,var(--a2) 14%,transparent)" : css(col(t[i])), stroke: css(col(t[i])), "stroke-dasharray": dashed ? "4 3" : "none" }, s);
+      txt(s, x + tw / 2, ty + 20, d.lab[i], { "text-anchor": "middle", style: dashed ? "fill:var(--a2)" : "fill:var(--panel)" });
+      const o = d.out(i, t);
+      if (o) {
+        const h = d.hi(i, t), yo = 92 + (i % 2) * 28;
+        el("line", { x1: x + tw / 2, x2: x + tw / 2, y1: ty - 4, y2: yo + 8, stroke: css(h ? "a2" : "muted"), "stroke-width": h ? 2 : 1, "marker-end": "url(#stArr)" }, s);
+        txt(s, x + tw / 2, yo, "→ " + o, { "text-anchor": "middle", style: h ? "fill:var(--a2);font-weight:600" : "fill:var(--muted)" });
+      }
+    }
+    const mk_ = el("marker", { id: "stArr", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, el("defs", {}, s)); el("path", { d: "M0,0L10,5L0,10z", fill: css("muted") }, mk_);
+    txt(s, x0, 62, m === "tf" ? "trained: every token predicts what follows it; forecast: take the last one" : m === "ed" ? "each decoder token predicts the next value; generated one at a time" : "highlighted outputs make the forecast", { style: "fill:var(--muted)" });
+    // mask grid
+    const cs = 26, gx = 560 + (7 - n) * cs / 2, gy = 50;
+    txt(s, gx, gy - 12, "who may read whom (time)", {});
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const on = d.sees(r, c, t);
+      el("rect", { x: gx + c * cs + 34, y: gy + r * cs, width: cs - 3, height: cs - 3, rx: 3, fill: on ? css(col(t[c])) : "color-mix(in srgb,var(--muted) 15%,transparent)", opacity: on ? (t[c] === "f" || t[c] === "w" || t[c] === "p" ? .55 : .9) : 1 }, s);
+    }
+    for (let r = 0; r < n; r++) { txt(s, gx + 30, gy + r * cs + 16, d.lab[r], { "text-anchor": "end", style: "font-size:10px" }); const tt = txt(s, gx + r * cs + 34 + cs / 2, gy + n * cs + 6, d.lab[r], { "text-anchor": "end", style: "font-size:10px", transform: `rotate(-60 ${gx + r * cs + 34 + cs / 2} ${gy + n * cs + 6})` }); }
+    txt(s, gx + 34, gy + n * cs + 48, "row reads column", { style: "fill:var(--muted)" });
+    $("#stOut").innerHTML = TXT[m].map(p => `<p>${p}</p>`).join("");
+  }
+  seg("#stModel", v => { m = v; draw(); }); draw();
 }
