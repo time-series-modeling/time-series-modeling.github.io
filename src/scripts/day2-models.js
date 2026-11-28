@@ -552,3 +552,189 @@ if (document.querySelector("#figDLarch")) {
   ];
   stepper("#figDLarch", "#dlaStep", "#dlaCap", 920, 236, build, steps).draw();
 }
+
+/* ================================================================ t0-gamma and Timestral
+   Architecture walkthroughs and attention-mask explorer. Sizes are read from the released weights
+   (t0-gamma model.safetensors / config.json; Timestral-209M likewise); mask rules follow
+   t0/mask.py (tfc-t0) and timestral/masks.py (mistralai/timestral). */
+function fmLayout(extra, roll) {
+  // snake: top row left to right, bottom row right to left, one extra node in the middle row
+  const TY = 16, MY = 138, BY = 252, h = 60, nodes = [], edges = [];
+  return (top, bottom) => {
+    const tx = [8, 172, 356, 550, 744], tw = [140, 160, 170, 170, 168];
+    top.forEach((n, i) => nodes.push({ id: n.id, x: tx[i], y: TY, w: tw[i], h, lines: n.lines, col: n.col }));
+    const bx = [744, 550, 356, 172], bw = [168, 170, 170, 160];
+    bottom.forEach((n, i) => nodes.push({ id: n.id, x: bx[i], y: BY, w: bw[i], h, lines: n.lines, col: n.col }));
+    nodes.push({ id: extra.id, x: 550, y: MY, w: 170, h: 56, lines: extra.lines, col: extra.col });
+    nodes.push({ id: "roll", x: 8, y: BY, w: 140, h, lines: roll, col: "muted" });
+    for (let i = 0; i < 4; i++) edges.push({ id: top[i + 1].id, p: [[tx[i] + tw[i], TY + h / 2], [tx[i + 1], TY + h / 2]] });
+    edges.push({ id: bottom[0].id, p: [[828, TY + h], [828, BY]] });
+    for (let i = 0; i < 3; i++) edges.push({ id: bottom[i + 1].id, p: [[bx[i], BY + h / 2], [bx[i + 1] + bw[i + 1], BY + h / 2]], col: "a2" });
+    edges.push({ id: "roll", p: [[172, BY + h / 2], [148, BY + h / 2]], dash: true });
+    if (extra.into === "embed") edges.push({ id: extra.id, p: [[635, MY], [635, TY + h]], col: extra.col });
+    else edges.push({ id: extra.id, p: [[720, MY + 28], [790, MY + 28], [790, TY + h]], col: extra.col });
+    return { nodes, edges };
+  };
+}
+
+/* ---------------- t0-gamma: whole network */
+if (document.querySelector("#figT0arch")) {
+  const build = () => fmLayout({ id: "role", lines: ["+ role embedding", "target · past cov ·", "known-future cov"], col: "a4", into: "embed" }, ["> 1,024 steps:", "roll out, feed", "forecast back"])(
+    [
+      { id: "in", lines: ["history y, x", "+ known future z", "over the horizon"] },
+      { id: "scale", lines: ["causal scaling", "mean, std up to t", "then arcsinh"], col: "a1" },
+      { id: "patch", lines: ["patches of 32", "horizon appended", "as blanked patches"], col: "a1" },
+      { id: "embed", lines: ["patch embedding", "[values‖time‖valid]", "residual MLP 96→1024"], col: "a1" },
+      { id: "tf", lines: ["24 layers", "(time, time, variate)", "× 8 · width 1024"], col: "a4" },
+    ],
+    [
+      { id: "dec", lines: ["decoder per token", "residual MLP", "1024 → 32 × 21"], col: "a2" },
+      { id: "qnt", lines: ["monotone quantiles", "lowest + cumsum of", "softplus steps"], col: "a2" },
+      { id: "unscale", lines: ["unscale", "μ_T + σ_T · sinh(·)"], col: "a2" },
+      { id: "out", lines: ["21 quantiles", "per step, ≤ 1,024", "steps in one pass"], col: "a2" },
+    ]);
+  const steps = () => [
+    { on: "all", cap: "t0-gamma end to end, as its released weights and the tfc-t0 code define it. Data goes in at the top left and is turned into one token per patch of 32 steps; the 24-layer transformer mixes tokens along time and across variates; the bottom row turns each token back into 32 steps × 21 quantiles. The only part that grows with the data is the number of tokens: a 10,000-step history with 3 covariates is 4 rows × 313 patches." },
+    { on: ["in", "scale"], cap: "<b>Scale.</b> Each variate is standardised on its own. For the target y and past covariates x the mean and standard deviation at step t use only steps 1 … t (causal running statistics), so nothing from the future enters through the scaling; then arcsinh squashes heavy tails while staying linear near zero (a trick Chronos-2 popularised). Known-future covariates z are standardised over the whole window, since they are known over it. The forecast is mapped back with the statistics frozen at the forecast origin T, so the model itself must predict any change of level or spread (report §4.1, eq. 2)." },
+    { on: ["patch"], cap: "<b>Patch.</b> Every row is cut into patches of 32 steps; the context is left-padded to a whole number of patches. The forecast horizon, rounded up to whole patches, is appended to each row: for y and x those patches are <b>blanked</b> (values 0, flagged as withheld), for z they carry the known future values. This is how the model was trained: runs of 1 to 16 patches were blanked at random (contiguous patch masking, from TiRex), so an empty horizon is a familiar sight. On our weekly data: 93 weeks of history = 2.9 patches, and the 14-week forecast is less than half a patch." },
+    { on: ["embed", "role"], cap: "<b>Embed.</b> Each patch becomes one 1,024-number token. The input is 96 numbers: the 32 scaled values, a within-patch time index (0, 1/32 … 31/32) and the 32 validity bits, so a missing value and a real zero look different. A residual MLP (96 → 1,024 → 1,024 with ReLU, plus a linear skip) projects them, adapted from Chronos-2's encoder. A learned vector for the row's role (target, past covariate, known-future covariate) is added. No date or frequency feature is used anywhere." },
+    { on: ["tf"], cap: "<b>24 layers</b>, two time layers then one variate layer, eight times (16 + 8). <b>Time attention</b> runs along one row's patches: causal for y and x, bidirectional for z, with rotary positions per patch and an xPos-style decay so far-away patches weigh less. <b>Variate attention</b> runs across the rows of one series at the same patch position, with no positional encoding (the order of covariates does not matter); z is read by y and x but reads only other z (see <a href=\"#m-fm-masks\">who sees what</a>). Every layer: pre-RMSNorm, QK-norm (queries and keys normalised per head), SwiGLU feed-forward 1,024 → 2 × 2,048 → 1,024. 8 heads of 128." },
+    { on: ["dec", "qnt", "unscale", "out", "roll"], cap: "<b>Decode.</b> The same residual MLP (1,024 → 1,024 → 672) runs on every token and outputs 32 steps × 21 quantiles. The token at patch p forecasts patch p + 1: the last context patch gives forecast steps 1–32, the first blanked patch steps 33–64, and so on. The quantiles cannot cross: the lowest level is predicted directly and each next level adds a softplus (always positive) step. Then the scaling is undone. Up to 1,024 steps come out of one pass; for longer horizons the model forecasts 1,024 steps, folds them into the context and repeats (the report describes carrying several quantile paths, as Chronos-2 does)." },
+  ];
+  stepper("#figT0arch", "#t0Step", "#t0Cap", 920, 320, build, steps).draw();
+}
+
+/* ---------------- Timestral: whole network */
+if (document.querySelector("#figTSarch")) {
+  const build = () => fmLayout({ id: "pred", lines: ["prediction tokens", "one learned vector,", "at each forecast patch"], col: "a2", into: "tf" }, ["> 1,024 steps:", "block by block,", "medians fed back"])(
+    [
+      { id: "in", lines: ["history y, x", "+ known future z", "over the horizon"] },
+      { id: "scale", lines: ["causal scaling", "mean, std to patch", "end, then asinh"], col: "a1" },
+      { id: "patch", lines: ["patches of 32", "context up to", "32,768 steps"], col: "a1" },
+      { id: "embed", lines: ["context tokens", "[values‖missing]", "residual MLP 64→768"], col: "a1" },
+      { id: "tf", lines: ["24 blocks: time;", "every 4th + variate", "gated · width 768"], col: "a4" },
+    ],
+    [
+      { id: "dec", lines: ["quantile head", "on target prediction", "tokens: 768 → 32×21"], col: "a2" },
+      { id: "qnt", lines: ["monotone quantiles", "median ± cumsum", "of softplus steps"], col: "a2" },
+      { id: "unscale", lines: ["unscale with stats", "up to the end of", "the previous patch"], col: "a2" },
+      { id: "out", lines: ["21 quantiles", "per step, ≤ 1,024", "steps in one pass"], col: "a2" },
+    ]);
+  const steps = () => [
+    { on: "all", cap: "Timestral-209M end to end, as its released weights and inference code define it. The difference from t0 is the middle row: the forecast is not read from the data tokens but from a second stream of <b>prediction tokens</b> that sit at the forecast positions and look back at the context." },
+    { on: ["in", "scale"], cap: "<b>Scale.</b> Each patch of a variate is standardised with the mean and standard deviation of all its observed values up to the end of that patch (causal, as in Toto), then put through asinh (as in Chronos-2). Known-future covariates use statistics over the whole window, and binary ones such as holiday flags are left as 0/1. Missing values are set to 0 and flagged." },
+    { on: ["patch", "embed"], cap: "<b>Patch and embed.</b> 32 steps per patch, up to 32,768 steps (1,024 patches) of context, the length used in post-training. Each patch becomes one 768-number <b>context token</b> from 64 inputs: the 32 values and 32 missing flags, through a residual MLP 64 → 3,072 → 768 (SiLU, plus a linear skip). There is no time index inside the patch, no date, and no role embedding: targets and covariates get the same kind of token." },
+    { on: ["pred"], cap: "<b>Prediction tokens</b> (the report's Decoupled Horizon Forecasting). For every forecast patch j, every variate gets a copy of one learned 768-number vector, placed at position j. It carries no data, only a position, through the rotary embedding. A prediction token reads the context tokens before its forecast block and the earlier prediction tokens of the same block; context tokens never read prediction tokens. So the context is encoded once, causally, and the horizon is a separate stream on top of it." },
+    { on: ["tf"], cap: "<b>24 blocks.</b> Every block does time attention then a SwiGLU feed-forward (768 → 2 × 2,048 → 768); blocks 4, 8, … 24 add variate attention in between, so 24 time and 6 variate attentions. Both attention types have a sigmoid output gate (gated attention, Qiu et al. 2025). Time attention rotates 32 of each head's 64 dimensions with RoPE; variate attention has no positions. Pre-norm RMSNorm, no biases, no dropout. 12 heads of 64. Roles enter only through the masks: covariates never read targets, and known-future covariates read only each other." },
+    { on: ["dec", "qnt", "unscale", "out", "roll"], cap: "<b>Quantile head.</b> After a final RMSNorm, only the target rows' prediction tokens are read: a residual MLP 768 → 3,072 → 672 = 32 steps × 21 quantiles. The token at position j forecasts patch j itself. The median is predicted directly and the other levels fan out below and above it by cumulative softplus steps, so they cannot cross. Patch j is unscaled with the statistics up to the end of patch j − 1; inside the block those earlier patches are unknown, so the predicted medians stand in. One pass covers up to 32 patches (1,024 steps); longer horizons are forecast block by block, appending each block's median." },
+  ];
+  stepper("#figTSarch", "#tsStep", "#tsCap", 920, 320, build, steps).draw();
+}
+
+/* ---------------- who can see what: attention masks of t0-gamma and Timestral */
+if (document.querySelector("#figFMmask")) {
+  const NC = 6, NH = 3, NP = NC + NH, ROLE = ["y", "x", "z"], RCOL = ["a1", "a3", "a4"];
+  const RNAME = ["target y", "past covariate x", "known-future z"];
+  let model = "t0", layer = "time";
+  const sel = { t0: { s: "c", r: 0, i: 5 }, ts: { s: "p", r: 0, i: 7 } };
+  // which tokens exist
+  const exists = (m, t) => m === "t0" ? t.s === "c" : t.s === "c" ? (t.i < NC || t.r === 2) : t.i >= NC;
+  // may query q read key k? (diagonal always open)
+  function sees(m, L, q, k) {
+    if (q.s === k.s && q.r === k.r && q.i === k.i) return true;
+    if (m === "t0") {
+      if (L === "time") return k.r === q.r && (q.r === 2 || k.i <= q.i);
+      return k.i === q.i && (q.r !== 2 || k.r === 2);
+    }
+    if (L === "time") {
+      if (k.r !== q.r) return false;
+      if (q.s === "c") return k.s === "c" && (q.r === 2 || k.i <= q.i);
+      return (k.s === "c" && k.i < NC) || (k.s === "p" && k.i <= q.i);
+    }
+    if (k.s !== q.s || k.i !== q.i) return false;
+    return q.r === 0 || (q.r === 1 ? k.r !== 0 : k.r === 2);
+  }
+  function explain(m, L, q) {
+    const who = (q.s === "p" ? "prediction token of " : "") + RNAME[q.r] + (q.i < NC ? `, context patch ${q.i + 1}` : `, forecast patch ${q.i - NC + 1}`);
+    let t = "";
+    if (m === "t0") {
+      if (L === "time") t = q.r === 2 ? "Known-future rows attend in both directions along time: z at any patch reads its whole row, including the forecast patches where its planned values are." : q.i >= NC ? "A blanked forecast patch reads its own row up to itself (causal), including earlier blanked patches. It holds no data, but its token still carries the role vector and a position, and its output forecasts the next patch." : "Causal: this patch reads its own row up to and including itself. Its output forecasts the next patch" + (q.i === NC - 1 ? ", here forecast patch 1." : ".");
+      else t = q.r === 2 ? "At each patch position z reads only other known-future rows, never y or x. This closes the two-hop leak." : "At this patch position it reads every row of its series: target, past covariate and known-future covariate. At a forecast patch, this is where a planned promotion reaches the target's blanked token directly.";
+    } else {
+      if (q.s === "c") {
+        if (L === "time") t = q.r === 2 ? "Context tokens of known-future rows read their whole row along time, the forecast patches included, but never any prediction token." : "Context tokens are causal and never read prediction tokens, so the context is encoded once and shared by every forecast block. Context outputs get no loss and are not decoded.";
+        else t = q.r === 0 ? "Context token of the target: reads the context tokens of every row at this position." : q.r === 1 ? "Past covariates read other covariates but not the target: Timestral treats covariates as exogenous (report §3.2)." : "Known-future rows read only other known-future rows.";
+      } else {
+        if (L === "time") t = "A prediction token reads its own row's context tokens before the forecast block, and the prediction tokens of its block up to itself. Even z's prediction tokens skip z's context tokens inside the horizon: the planned future reaches the forecast through z's context tokens before the block (which have read the whole row) and then through variate attention.";
+        else t = q.r === 0 ? "Prediction tokens exchange information with prediction tokens of other rows at the same position, never with context tokens. The target's prediction token reads both covariates' prediction tokens; its output is the forecast of this patch." : q.r === 1 ? "The past covariate's prediction token reads x and z, not the target. Its output is never decoded; it exists to pass information along." : "z's prediction token reads only z. Its output is never decoded.";
+      }
+    }
+    const nk = []; ["c", "p"].forEach(s => [0, 1, 2].forEach(r => { for (let i = 0; i < NP; i++) { const k = { s, r, i }; if (exists(m, k) && sees(m, L, q, k) && !(k.s === q.s && k.r === q.r && k.i === q.i)) nk.push(k); } }));
+    return `<b>${who}</b> · ${L === "time" ? "time" : "variate"} attention · reads <b>${nk.length}</b> other token${nk.length === 1 ? "" : "s"}. ${t}`;
+  }
+  function draw() {
+    const W = 920, H = model === "t0" ? 206 : 316, s = mk("#figFMmask", W, H), q = sel[model];
+    const X0 = 178, cw = 72, gap = 6, rh = 30, rg = 8, cx = i => X0 + i * (cw + gap) + (i >= NC ? 14 : 0);
+    const streams = model === "t0" ? [{ s: "c", y0: 40, title: "one token per patch" }] : [{ s: "c", y0: 40, title: "context tokens" }, { s: "p", y0: 172, title: "prediction tokens" }];
+    txt(s, (cx(0) + cx(NC - 1) + cw) / 2, 18, "context", { "text-anchor": "middle", class: "t-ink t-b" });
+    txt(s, (cx(NC) + cx(NP - 1) + cw) / 2, 18, "forecast horizon", { "text-anchor": "middle", class: "t-ink t-b" });
+    el("line", { x1: cx(NC) - 10, x2: cx(NC) - 10, y1: 8, y2: H - 30, stroke: css("muted"), "stroke-dasharray": "4 3" }, s);
+    streams.forEach(st => {
+      txt(s, 8, st.y0 - 8, st.title, { class: "t-ink t-b" });
+      [0, 1, 2].forEach(r => {
+        const y = st.y0 + r * (rh + rg);
+        txt(s, 8, y + rh / 2 + 4, RNAME[r], { style: `fill:var(--${RCOL[r]})` });
+        for (let i = 0; i < NP; i++) {
+          const k = { s: st.s, r, i };
+          if (!exists(model, k)) { if (model === "ts" && st.s === "c") txt(s, cx(i) + cw / 2, y + rh / 2 + 4, "—", { "text-anchor": "middle", opacity: .5 }); continue; }
+          const isQ = q.s === k.s && q.r === r && q.i === i, ok = sees(model, layer, q, k);
+          const lab = st.s === "p" ? "p" : i < NC ? "data" : r === 2 ? "known" : "blanked";
+          const g = el("g", { style: "cursor:pointer", tabindex: 0, role: "button", "aria-label": `${st.s === "p" ? "prediction token" : "token"} ${RNAME[r]} patch ${i + 1}` }, s);
+          el("rect", { x: cx(i), y, width: cw, height: rh, rx: 6, fill: ok ? `color-mix(in srgb,var(--${RCOL[r]}) ${isQ ? 45 : 22}%,var(--panel))` : css("panel"), stroke: isQ ? css("a2") : ok ? css(RCOL[r]) : css("line"), "stroke-width": isQ ? 3 : ok ? 1.6 : 1, ...(lab === "blanked" ? { "stroke-dasharray": "4 3" } : {}) }, g);
+          txt(g, cx(i) + cw / 2, y + rh / 2 + 4, lab, { "text-anchor": "middle", class: ok ? "t-ink" : "", opacity: ok ? 1 : .45 });
+          const pick = () => { sel[model] = k; draw(); };
+          g.addEventListener("click", pick);
+          g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+        }
+      });
+    });
+    // what each output forecasts
+    const yb = H - 14;
+    if (model === "t0") {
+      for (let i = NC - 1; i < NP - 1; i++) el("path", { d: `M${cx(i) + cw / 2},150Q${(cx(i) + cx(i + 1)) / 2 + cw / 2},176 ${cx(i + 1) + cw / 2 - 4},152`, fill: "none", stroke: css("a2"), "stroke-width": 1.3, "marker-end": "url(#fm-ah)" }, s);
+      txt(s, X0, yb, "orange arrows: the target token at each patch forecasts the next patch (last context patch → forecast patch 1)", { style: "fill:var(--a2)" });
+    } else {
+      txt(s, X0, yb, "the target's prediction token at a forecast patch forecasts that same patch; only those three tokens are decoded", { style: "fill:var(--a2)" });
+    }
+    arrowDefs(s, "fm-ah");
+    $("#fmOut").innerHTML = explain(model, layer, q);
+  }
+  seg("#fmModel", v => { model = v; draw(); });
+  seg("#fmLayer", v => { layer = v; draw(); });
+  draw();
+
+  // layer pattern strip
+  const W = 920, H = 132, s = mk("#figFMlayers", W, H), X0 = 150, bw = 24, bg = 4;
+  const rows = [
+    { name: "t0-gamma", y: 26, cells: Array.from({ length: 24 }, (_, i) => (i % 3 === 2 ? "V" : "T")) },
+    { name: "Timestral-209M", y: 82, cells: Array.from({ length: 24 }, (_, i) => (i % 4 === 3 ? "TV" : "T")) },
+  ];
+  txt(s, X0, 12, "layer 1 → 24 · T = time attention · V = variate attention · each followed by a feed-forward", { class: "t-ink" });
+  rows.forEach(r => {
+    txt(s, 8, r.y + 20, r.name, { class: "t-ink t-b" });
+    r.cells.forEach((c, i) => {
+      const x = X0 + i * (bw + bg);
+      if (c === "TV") {
+        el("rect", { x, y: r.y, width: bw, height: 15, rx: 3, fill: "color-mix(in srgb,var(--a1) 25%,var(--panel))", stroke: css("a1") }, s);
+        el("rect", { x, y: r.y + 17, width: bw, height: 15, rx: 3, fill: "color-mix(in srgb,var(--a4) 25%,var(--panel))", stroke: css("a4") }, s);
+        txt(s, x + bw / 2, r.y + 11, "T", { "text-anchor": "middle", class: "t-ink" });
+        txt(s, x + bw / 2, r.y + 28, "V", { "text-anchor": "middle", class: "t-ink" });
+      } else {
+        const col = c === "V" ? "a4" : "a1";
+        el("rect", { x, y: r.y, width: bw, height: 32, rx: 3, fill: `color-mix(in srgb,var(--${col}) 25%,var(--panel))`, stroke: css(col) }, s);
+        txt(s, x + bw / 2, r.y + 20, c, { "text-anchor": "middle", class: "t-ink" });
+      }
+    });
+    txt(s, X0 + 24 * (bw + bg) + 6, r.y + 20, r.name === "t0-gamma" ? "16 T + 8 V" : "24 T + 6 V", { class: "t-ink" });
+  });
+}
