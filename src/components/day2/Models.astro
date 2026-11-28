@@ -25,6 +25,7 @@ const s1 = (m: string) => Math.round(sec[m]) + ' s';
           <tr><td><a href="#m-nbeats">N-BEATS generic / interpretable</a> · <a href="#m-nbeats-inside">inside</a></td><td>neural, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('NBEATS_generic', 'NBEATS_interpretable')}</td></tr>
           <tr><td><a href="#m-nhits">NHITS (default, tuned, x, MQ)</a> · <a href="#m-nhits-inside">inside</a></td><td>neural, global</td><td>all series</td><td>x only</td><td>point / quantiles (MQ)</td><td>01–03, 06</td><td>{Math.min(...nh).toFixed(3)}–{Math.max(...nh).toFixed(3)}</td></tr>
           <tr><td><a href="#m-dlinear">DLinear</a> · <a href="#m-dlinear-inside">inside</a></td><td>linear, global</td><td>all series</td><td>no</td><td>point</td><td>01</td><td>{r3('DLinear')}</td></tr>
+          <tr><td><a href="#m-attn">Attention and causal attention</a> · <a href="#m-structure">encoder vs decoder</a></td><td colspan="6">what attention computes, what the causal mask adds, and how each foundation model is built (encoder-only, decoder-only, or in between)</td></tr>
           <tr><td><a href="#m-fm-compare">The four foundation models compared</a></td><td colspan="6">Chronos-2, TimesFM 2.5, t0-gamma and Timestral: data handling, multivariate series, covariates, structure and training philosophy</td></tr>
           <tr><td><a href="#m-cov">How covariates enter (x models)</a></td><td colspan="6">price index, promotion flag and discount depth as known future inputs; static series features</td></tr>
           <tr><td><a href="#m-chronos">Chronos-2 (via timecopilot)</a></td><td>pretrained transformer</td><td>millions of other series, then optionally ours</td><td>in context</td><td>quantiles</td><td>04</td><td>{r3('Chronos2_zs', 'Chronos2_zs_cov', 'Chronos2_ft')}</td></tr>
@@ -232,6 +233,38 @@ const s1 = (m: string) => Math.round(sec[m]) + ' s';
     <p class="take">Known-future inputs (price index, promotion, discount) are given for the input weeks <b>and</b> the 14 forecast weeks; static features (log mean sales, share of zero weeks, share of promotion weeks) describe the series. The model learns how they shift sales. Moving the slider applies each model's median promotion lift from Lab 03 to that week of its real forecast (an illustration of the lift size, not a re-run). The raw data shows {pct(lift.raw)}, an upper bound.</p>
   </div>
 
+  <div class="plate" id="m-attn">
+    <h3>Attention in one picture, and what “causal” adds</h3>
+    <p>All four foundation models below are transformers, and a transformer is mostly layers of <b>attention</b>. The series is first cut into patches, and each patch becomes a vector called a <b>token</b>. Each attention layer then lets every token gather information from other tokens. Each token produces three vectors from itself, using weight matrices learned in training:</p>
+    <ul class="list-disc pl-6">
+      <li>a <b>query</b>: what am I looking for?</li>
+      <li>a <b>key</b>: what do I contain?</li>
+      <li>a <b>value</b>: what do I pass on if someone reads me?</li>
+    </ul>
+    <p>The query of one token is compared with the key of every token. The scores go through a softmax, which turns them into weights that are positive and sum to 1. The token's new vector is the weighted average of the values. Every token does this at the same time, in several “heads” in parallel, in every layer. In one line: <code>output = softmax(Q·Kᵀ / √d + mask) · V</code>, where the mask is 0 where reading is allowed and −∞ where it is blocked (Vaswani et al., <a class="text-primary-600 hover:underline" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>, 2017).</p>
+    <p><b>Causal attention</b> is the same thing with one mask: token <i>i</i> may only read tokens 1 to <i>i</i>, never later ones. The blocked weights become 0, and the remaining weights are rescaled to sum to 1 again. Why this matters for forecasting: in training, every token is asked to predict what comes after it. If it could read later tokens, it would simply copy the answer. With the causal mask, one pass over a series gives an honest forecast from every position at once.</p>
+    <p>Click a patch to make it the query. Switch between full and causal attention to see the weights change.</p>
+    <div class="ctrl"><div class="seg" id="atMode"><button aria-pressed="true" data-v="full">full (bidirectional)</button><button aria-pressed="false" data-v="causal">causal</button></div></div>
+    <div class="fig wide" id="figAT"></div>
+    <div class="readout" id="atOut"></div>
+    <p class="cap">The series is our smooth example item, the 80 weeks before the test period, cut into 5 patches of 16 weeks. In a real model, the query and key are learned projections of each token. For this picture, both are the patch's (level, slope) direction, so the score is their cosine similarity times 3. The weights are therefore illustrative, but the softmax, the masking and the weighted average are computed exactly as in a transformer.</p>
+  </div>
+
+  <div class="plate" id="m-structure">
+    <h3>Encoder-decoder, encoder-only, decoder-only: how the four models are built</h3>
+    <p>These names come from the original Transformer, which had two halves. The <b>encoder</b> reads the input with full (bidirectional) attention. The <b>decoder</b> writes the output one token at a time with causal attention, and it also reads the encoder (cross-attention). Later models kept only one half:</p>
+    <ul class="list-disc pl-6">
+      <li><b>Encoder-only</b> models (BERT-style) read everything at once. Chronos-2 is one: it puts placeholder tokens at the future positions and reads the forecast from them.</li>
+      <li><b>Decoder-only</b> models (GPT-style) are one causal stack. Every token predicts what follows it, and the forecast comes from the last token. TimesFM 2.5 is one.</li>
+    </ul>
+    <p>Here “decoder” means the causal stack, not the small output network: all four models end in a small multilayer perceptron (the “head”) that turns a token into numbers. t0-gamma and Timestral sit in between. Their time attention is causal, like a decoder, but they also have tokens at the future positions, like an encoder. None of the four is encoder-decoder; the first Chronos (2024) was.</p>
+    <p>Pick a structure. Tokens are drawn on the left, with what each one is trained to predict above it. The grid on the right shows which tokens each token may read along time (row reads column).</p>
+    <div class="ctrl"><div class="seg" id="stModel"><button aria-pressed="false" data-v="ed">Encoder-decoder (Chronos 1, T5)</button><button aria-pressed="true" data-v="ch">Chronos-2</button><button aria-pressed="false" data-v="tf">TimesFM 2.5</button><button aria-pressed="false" data-v="t0">t0-gamma</button><button aria-pressed="false" data-v="ts">Timestral</button></div></div>
+    <div class="fig wide" id="figST"></div>
+    <div class="cap" id="stOut"></div>
+    <p class="cap">Sources: Chronos-2 report §3.2 (“an encoder-only transformer … the T5 encoder”); TimesFM paper §4 (version 1.0: decoder-only, causal attention, output patch longer than input patch) and the TimesFM 2.5 code; t0 report §4.1 (“a decoder-style patch transformer”) and <code>t0/mask.py</code>; Timestral report §2.2 and §3.1 (“a causal encoder-only model”, prediction tokens); Chronos (Ansari et al., 2024) for the encoder-decoder row. Only the target row of time attention is drawn. Variate and group attention are covered in <a href="#m-fm-masks">who can see what</a>.</p>
+  </div>
+
   <div class="plate" id="m-chronos">
     <h3>Chronos-2: a pretrained transformer reads the series as tokens</h3>
     <div class="ctrl"><div class="seg" id="chStep"><button aria-pressed="true" data-v="0">1 · Scale</button><button aria-pressed="false" data-v="1">2 · Patch</button><button aria-pressed="false" data-v="2">3 · Add covariates</button><button aria-pressed="false" data-v="3">4 · Attend</button><button aria-pressed="false" data-v="4">5 · Quantiles</button></div><button class="btn" id="chPlay">▶ Play</button></div>
@@ -246,6 +279,23 @@ const s1 = (m: string) => Math.round(sec[m]) + ' s';
     <div class="fig" id="figTF"></div>
     <p class="cap" id="tfCap"></p>
     <p class="take">Google's TimesFM reads the series left to right, like a language model reads text, and is trained to predict what comes after each patch. Chronos-2 instead reads the whole context at once and can use covariates; in Lab 04 TimesFM runs zero-shot on sales alone, as a second opinion. If two pretrained models that learned from different data agree, the zero-shot result is more trustworthy; if they disagree, neither is a free win. Both have Apache-2.0 weights. In Lab 04 TimesFM scores {r3('TimesFM_zs')}, next to zero-shot Chronos-2 ({r3('Chronos2_zs')}) and the default NHITS ({r3('NHITS')}): the two pretrained models roughly agree, and without price and promotions neither beats the default NHITS. TimesFM 2.5 only outputs the 10–90 % quantiles, so its "95 %" interval is the 80 % one.</p>
+    <h3 class="mt-4">Which TimesFM? Four versions, one paper</h3>
+    <p>The only TimesFM paper (Das et al., ICML 2024) describes version 1.0. Lab 04 runs <b>2.5</b>, which changed a lot but kept the decoder-only design with 32-step input patches and 128-step output patches. The newest release, 3.0, is the first one that is multivariate, and its weights are for non-commercial use only. The rows below come from the paper (1.0), the repository README, the archived 1.0/2.0 code (<code>v1/</code>) and the 2.5 code (<code>timesfm_2p5</code>). We have not read 3.0 in detail, since it is not used in the labs.</p>
+    <div class="tw">
+      <table class="mtable">
+        <thead><tr><th></th><th>1.0 (paper)</th><th>2.0</th><th>2.5 (Lab 04)</th><th>3.0</th></tr></thead>
+        <tbody>
+          <tr><td>Size</td><td>200M, 20 layers, width 1,280</td><td>500M, 50 layers</td><td>200M, 20 layers, width 1,280, 16 heads</td><td>see model card</td></tr>
+          <tr><td>Context</td><td>up to 512 steps</td><td>up to 2,048</td><td>up to 16,384</td><td>see model card</td></tr>
+          <tr><td>Position</td><td>sinusoidal positional encoding added to each token</td><td>none: only the causal mask gives order</td><td>rotary embeddings (RoPE), QK-norm, RMSNorm</td><td></td></tr>
+          <tr><td>Inputs</td><td>values, mask, a frequency category (3 levels)</td><td>same as 1.0</td><td>values and mask only (frequency indicator removed)</td><td>several variates (multivariate)</td></tr>
+          <tr><td>Output</td><td>point forecast, 128 steps per token (the released code adds experimental quantile heads)</td><td>point + quantiles</td><td>point forecast + 9 quantiles (10–90 %), 128 steps per token; optional 30M quantile head for up to 1,024 steps</td><td></td></tr>
+          <tr><td>Covariates</td><td>none in the paper; XReg added later in the code</td><td>XReg (outside the network)</td><td>XReg (outside the network)</td><td></td></tr>
+          <tr><td>Weights licence</td><td>Apache-2.0</td><td>Apache-2.0</td><td>Apache-2.0</td><td>non-commercial</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">So the widget above is up to date for 2.5 in its structure (causal, 32 in, 128 out, last token forecasts, median fed back for long horizons). What we cannot check for 2.5 is the training recipe: Google has not published it, so step 3 shows the 1.0 paper's recipe.</p>
   </div>
 
   <div class="plate" id="m-t0">
@@ -336,6 +386,12 @@ const s1 = (m: string) => Math.round(sec[m]) + ' s';
     <div class="fig wide" id="figFMmask"></div>
     <div class="readout" id="fmOut"></div>
     <div class="fig wide" id="figFMlayers"></div>
+    <p class="cap"><b>How to read this strip.</b> Each box is one layer of the network. The data flows through them from left to right, layer 1 first and layer 24 last, and every layer slightly rewrites each token. A layer has one of two jobs:</p>
+    <ul class="cap list-disc pl-6">
+      <li><b>T (time attention):</b> each series looks back along its own history. A token reads earlier patches of the same row: the target reads its own past, a covariate reads its own past.</li>
+      <li><b>V (variate attention):</b> the series look at each other at the same moment. At one patch position, the target reads the covariates (and, depending on the rules above, they read it).</li>
+    </ul>
+    <p class="cap">Each attention step is followed by a small feed-forward network applied to every token on its own. <b>t0-gamma</b> uses separate layers in the pattern T, T, V, repeated 8 times: 16 time layers and 8 variate layers. <b>Timestral</b> has a time attention in all 24 layers. In every 4th layer (layers 4, 8, …, 24) a variate attention is added inside the same layer, which is why those boxes are split in two. Inside those layers, time attention runs first and variate attention second, and then the layer's one feed-forward network runs (checked in <code>timestral/layers.py</code> and the 209M <code>block_schedule</code>). So both models alternate “look along time” with “look across series”; t0 mixes across series more often (8 times versus 6).</p>
     <div class="tw">
       <table class="mtable">
         <thead><tr><th></th><th>t0-gamma</th><th>Timestral-209M</th></tr></thead>
