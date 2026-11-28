@@ -21,8 +21,9 @@ const jShare = D.sale_class.J / D.n_series;
     <div class="readout" id="smpInfo">Loading the sample …</div>
     <div class="fig" id="figSmp"></div>
     <div class="legend"><span><i style="background:var(--ink)"></i>sales_units</span><span><i style="background:color-mix(in srgb,var(--a2) 25%,transparent)"></i>is_promotional week</span><span><i style="background:var(--a4)"></i>sale_price (right axis)</span><span><i style="background:var(--muted)"></i>regular_price (dashed)</span></div>
+    <p class="cap">Below: every row of this item in <code>sales_weekly.parquet</code>, all 13 columns with their raw names and values (promotion weeks tinted). Scroll sideways for the rest.</p>
     <div class="smp-rows"><table class="mtable num-right" id="smpTable"></table></div>
-    <p class="cap">A sample of 200 of the {f(D.n_series)} series the labs model: 50 per demand type, spread over the sale classes, plus the examples used in the slides. Values are the raw file's, unchanged (sale_price is the average price paid in the week). <a id="smpCsv" class="smp-a" download>Download the sample as CSV</a> (<span id="smpRows">…</span> rows) or get the full data from the workshop repository.</p>
+    <p class="cap">A sample of 200 of the {f(D.n_series)} series the labs model: 50 per demand type, spread over the sale classes, plus the examples used in the slides. Values are the raw file's, unchanged (sale_price is the average price paid in the week). <a id="smpCsv" class="smp-a" download>Download the sample as CSV</a>, the same rows and columns as <code>sales_weekly.parquet</code> (<span id="smpRows">…</span> rows) or get the full data from the workshop repository.</p>
   </div>
 
   <div class="plate">

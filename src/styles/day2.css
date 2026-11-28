@@ -63,3 +63,4 @@
 .d2 .smp-a { color: var(--a1); font-weight: 600; }
 .d2 .smp-a:hover { text-decoration: underline; }
 .d2 #smpTable th { text-transform: none; letter-spacing: 0; font-family: var(--f-mono); }
+.d2 #smpTable td, .d2 #smpTable th { white-space: nowrap; font-family: var(--f-mono); font-size: 0.78rem; }

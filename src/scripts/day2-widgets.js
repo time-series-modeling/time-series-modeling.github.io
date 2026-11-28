@@ -62,8 +62,12 @@ if (document.querySelector("#smpPick")) {
     ticks(pmin, pmax, 3).forEach(v => txt(s, W - R + 6, yp(v) + 4, v.toFixed(2)));
     el("path", { d: path(xs.map((t, i) => [x(t), y(o.y[i])])), fill: "none", stroke: css("ink"), "stroke-width": 1.8 }, s);
     [dt("2023-10-01"), dt("2024-04-01"), dt("2024-10-01"), dt("2025-04-01")].forEach(t => txt(s, x(t), H - 10, mon(t), { "text-anchor": "middle" }));
-    const head = "<thead><tr><th>week_start</th><th>sales_units</th><th>is_promotional</th><th>sale_price</th><th>regular_price</th></tr></thead>";
-    $("#smpTable").innerHTML = head + "<tbody>" + ds.map((d, i) => `<tr${o.p[i] === "1" ? ' class="promo"' : ""}><td>${d}${dt(d) >= ts ? " · test" : ""}</td><td class="num">${fmt(o.y[i], o.y[i] % 1 ? 2 : 0)}</td><td class="num">${o.p[i] === "1"}</td><td class="num">${o.sp[i].toFixed(2)}</td><td class="num">${(+rp[i]).toFixed(2)}</td></tr>`).join("") + "</tbody>";
+    // every raw column of sales_weekly.parquet, raw names and raw values, in file order
+    const X = c => { const v = o.x[c]; return Array.isArray(v) ? i => v[i] : () => v; };
+    const raw = { unique_id: () => o.id, week_start: i => ds[i], sales_units: i => o.y[i].toFixed(1), is_promotional: i => String(o.p[i] === "1"), sale_price: i => String(o.sp[i]), regular_price: i => String(rp[i]) };
+    const cols = S.columns, get = Object.fromEntries(cols.map(c => [c, raw[c] || ((f => i => String(f(i)))(X(c)))]));
+    const num = c => !["unique_id", "week_start", "sale_class"].includes(c);
+    $("#smpTable").innerHTML = "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>" + ds.map((d, i) => `<tr${o.p[i] === "1" ? ' class="promo"' : ""}>` + cols.map(c => `<td${num(c) ? ' class="num"' : ""}>${get[c](i)}</td>`).join("") + "</tr>").join("") + "</tbody>";
   }
   seg("#smpType", v => { type = v; fill(); });
   $("#smpFind").addEventListener("input", e => { q = e.target.value.trim().toLowerCase(); fill(); });
