@@ -27,6 +27,52 @@ if (document.querySelector("#stats")) {
 })();
 
 }
+if (document.querySelector("#smpPick")) {
+/* ---------------- raw-data sample explorer (public/workshops/packt-2026-11/day2/data/sample.json) */
+(async () => {
+  const BASE = "/workshops/packt-2026-11/day2/data/";
+  $("#smpCsv").href = BASE + "day2_data_sample.csv";
+  let S;
+  try { S = await (await fetch(BASE + "sample.json")).json(); } catch (e) { $("#smpInfo").textContent = "Could not load the sample."; return; }
+  const W0 = dt(S.weeks0), WK = 7 * 864e5, wk = i => new Date(W0 + i * WK).toISOString().slice(0, 10);
+  const all = S.series; let type = "all", q = "", cur = all.find(o => o.id === "11520_S1") || all[0];
+  $("#smpRows").textContent = fmt(all.reduce((z, o) => z + o.y.length, 0));
+  const label = o => `${o.dept || "no department"} · ${o.desc || "(no description)"} · class ${o.sc} · ${o.id}`;
+  const hay = o => [o.id, o.desc, o.brand, o.dept, o.cls, o.sub, o.dt, "class " + o.sc].join(" ").toLowerCase();
+  const shown = () => all.filter(o => (type === "all" || o.dt === type) && (!q || q.split(/\s+/).every(w => hay(o).includes(w))));
+  function fill() {
+    const L = shown();
+    if (L.length && !L.includes(cur)) cur = L[0];
+    $("#smpPick").innerHTML = L.map(o => `<option value="${o.id}" ${o === cur ? "selected" : ""}>${label(o).replace(/</g, "&lt;")}</option>`).join("");
+    $("#smpCount").textContent = `${L.length} of ${all.length} items`;
+    if (L.length) draw(); else { $("#smpInfo").textContent = "No item matches."; $("#figSmp").innerHTML = ""; $("#smpTable").innerHTML = ""; }
+  }
+  function draw() {
+    const o = cur, n = o.y.length, ds = o.y.map((_, i) => wk(o.s + i)), rp = Array.isArray(o.rp) ? o.rp : o.y.map(() => o.rp);
+    const nz = o.y.filter(v => v > 0).length, promoN = [...o.p].filter(c => c === "1").length;
+    $("#smpInfo").innerHTML = `<b>${o.id}</b> · ${o.desc || "<i>no description in items.csv</i>"} · ${o.brand}<br>${[o.dept, o.cls, o.sub].filter(Boolean).join(" › ") || "no hierarchy in items.csv"} · sale class ${o.sc} · ${o.dt} · ${n} weeks, ${n - nz} with zero sales, ${promoN} on promotion`;
+    const W = 900, H = 280, L = 58, R = 50, T = 14, B = 30, s = mk("#figSmp", W, H);
+    const xs = ds.map(dt), x = lin(W0, W0 + (S.n_weeks - 1) * WK, L, W - R), mx = Math.max(...o.y) * 1.1 || 1, y = lin(0, mx, H - B, T);
+    const pr = [...o.sp, ...rp], pmin = Math.min(...pr) * 0.9, pmax = Math.max(...pr) * 1.05, yp = lin(pmin, pmax, H - B, T), w = x(W0 + WK) - x(W0);
+    [...o.p].forEach((c, i) => c === "1" && el("rect", { x: x(xs[i]) - w / 2, y: T, width: w, height: H - B - T, fill: "color-mix(in srgb,var(--a2) 25%,transparent)" }, s));
+    const ts = dt(D.test_start); el("line", { x1: x(ts), x2: x(ts), y1: T, y2: H - B, stroke: css("ink"), "stroke-dasharray": "4 4" }, s); txt(s, x(ts) + 5, T + 12, "test →", { class: "t-ink" });
+    yAxis(s, y, ticks(0, mx, 4), L, W - R, v => v >= 1e6 ? fmt(v / 1e6, 1) + "M" : v >= 1e4 ? fmt(v / 1e3) + "k" : fmt(v));
+    el("path", { d: path(xs.map((t, i) => [x(t), yp(rp[i])])), fill: "none", stroke: css("muted"), "stroke-width": 1, "stroke-dasharray": "3 3" }, s);
+    el("path", { d: path(xs.map((t, i) => [x(t), yp(o.sp[i])])), fill: "none", stroke: css("a4"), "stroke-width": 1.2, opacity: .6 }, s);
+    ticks(pmin, pmax, 3).forEach(v => txt(s, W - R + 6, yp(v) + 4, v.toFixed(2)));
+    el("path", { d: path(xs.map((t, i) => [x(t), y(o.y[i])])), fill: "none", stroke: css("ink"), "stroke-width": 1.8 }, s);
+    [dt("2023-10-01"), dt("2024-04-01"), dt("2024-10-01"), dt("2025-04-01")].forEach(t => txt(s, x(t), H - 10, mon(t), { "text-anchor": "middle" }));
+    const head = "<thead><tr><th>week_start</th><th>sales_units</th><th>is_promotional</th><th>sale_price</th><th>regular_price</th></tr></thead>";
+    $("#smpTable").innerHTML = head + "<tbody>" + ds.map((d, i) => `<tr${o.p[i] === "1" ? ' class="promo"' : ""}><td>${d}${dt(d) >= ts ? " · test" : ""}</td><td class="num">${fmt(o.y[i], o.y[i] % 1 ? 2 : 0)}</td><td class="num">${o.p[i] === "1"}</td><td class="num">${o.sp[i].toFixed(2)}</td><td class="num">${(+rp[i]).toFixed(2)}</td></tr>`).join("") + "</tbody>";
+  }
+  seg("#smpType", v => { type = v; fill(); });
+  $("#smpFind").addEventListener("input", e => { q = e.target.value.trim().toLowerCase(); fill(); });
+  $("#smpPick").addEventListener("change", e => { cur = all.find(o => o.id === e.target.value); draw(); });
+  $("#smpRand").addEventListener("click", () => { const L = shown(); if (!L.length) return; let o; do { o = L[Math.floor(Math.random() * L.length)]; } while (L.length > 1 && o === cur); cur = o; $("#smpPick").value = o.id; draw(); });
+  fill();
+})();
+
+}
 if (document.querySelector("#figTotal")) {
 /* ---------------- total chart */
 function drawTotal(mode) {
