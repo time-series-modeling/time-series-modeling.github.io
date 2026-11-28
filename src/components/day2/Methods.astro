@@ -5,7 +5,7 @@ const f = (v: number) => v.toLocaleString('en-US');
 const pc = (v: number) => Math.round(100 * v);
 const bt = Object.fromEntries(R.l7_bt.map((r: any[]) => [r[0], r[1]]));
 const dN = bt.NHITSx - bt.Naive, pN = pc(1 / (1 + Math.pow(10, -dN / 400)));
-const l6 = R.l6, ho = R.l7_heldout, lb = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[1]]));
+const l6 = R.l6, l6p = R.l6_pool, ho = R.l7_heldout, lb = Object.fromEntries(R.lb.map((r: any[]) => [r[0], r[1]]));
 const cv = R.cv.map((c: any[]) => c[1].toFixed(2));
 const covPS80 = [l6.LightGBM_conf[0], l6.ETS_conf[0]].map(pc).sort(), covPS95 = [l6.LightGBM_conf[1], l6.ETS_conf[1]].map(pc).sort();
 const topNames = R.l7_top3.join(', ');
@@ -42,6 +42,15 @@ const allNhits = R.l7_top3.every((m: string) => m.startsWith('NHITS'));
     <div class="fig" id="figNH"></div>
     <p class="cap">Illustration on the smooth example series. Each stack looks at a pooled (blurred) input and outputs a few knots that are interpolated; the next stack models what is left. This shows the design, not a trained network: trained on our items, the stacks are smooth but do not divide the work this neatly.</p>
     <p class="take">The first stack draws the slow shape with a handful of points, the last fills in the weekly wiggles. Cheap, and robust on short noisy series. Lab 01: NHITS {lb.NHITS.toFixed(3)}; Lab 03 with covariates, on the median series, {R.l3_cov.NHITSx[1].toFixed(2)}.</p>
+  </div>
+
+  <div class="plate">
+    <h3>How conformal intervals work, in three steps</h3>
+    <div class="ctrl"><label>Promise <input type="range" id="hcLvl" min="50" max="95" step="5" value="80"></label><div class="seg" id="hcN"><button aria-pressed="false" data-v="3">3 past misses</button><button aria-pressed="true" data-v="19">19</button><button aria-pressed="false" data-v="99">99</button></div><button class="btn" id="hcNew">New past weeks</button><button class="btn" id="hcTest">New future weeks</button></div>
+    <div class="fig" id="figHC"></div>
+    <div class="readout" id="hcOut"></div>
+    <p class="cap">Simulated example. 1: the model forecast weeks it had not seen; each grey line is one miss, how far the actual was from the forecast. 2: sort the misses; the orange one is the ⌈(n+1)·promise⌉-th smallest, called q̂. 3: put ± q̂ around every new forecast and see how many new actuals land inside. One draw of the past can be lucky, so the readout also repeats all three steps 3,000 times.</p>
+    <p class="take">Conformal never looks inside the model: it only asks how wrong the model was before, and makes the band that wide. With 3 misses the band cannot keep an 80 % promise; with 19 it can. In Lab 06 we pool {f(l6p.n_h1)} scaled misses for week 1 (3 backtests × {f(D.n_series)} items), so q̂ is the {f(l6p.k80_h1)}th: {l6p.q80[0]} × the item's typical weekly change. For item {l6p.ex.id} that is {f(l6p.ex.yhat)} ± {f(l6p.ex.hi - l6p.ex.yhat)}, and the actual {f(l6p.ex.y)} lands inside. The promise holds on average ({pc(l6.LightGBM_pooled[0])} % for 80 %), not for every item: {pc(l6p.item_cov[0])} % of items were inside less than half the weeks.</p>
   </div>
 
   <div class="grid2">
