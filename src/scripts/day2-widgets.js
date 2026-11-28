@@ -282,6 +282,55 @@ function drawPB() {
 $("#pbTau").addEventListener("input", drawPB); drawPB();
 
 }
+if (document.querySelector("#hcLvl")) {
+/* ---------------- how conformal works (three steps) */
+let hcN = 19, hcPast = 1, hcFut = 1;
+const hcErr = r => randn(r) * 6 * (r() < 0.15 ? 2.2 : 1);   // signed miss: mostly small, now and then large
+function drawHC() {
+  const lvl = $("#hcLvl").value / 100, n = hcN, rp = rng(77 + 131 * hcPast + n), rf = rng(9001 + 17 * hcFut);
+  const past = Array.from({ length: n }, () => hcErr(rp)), sc = past.map(Math.abs), srt = [...sc].sort((a, b) => a - b);
+  const k = Math.ceil((n + 1) * lvl), short = k > n, q = srt[Math.min(k, n) - 1];
+  const fut = Array.from({ length: 200 }, () => hcErr(rf)), inside = fut.filter(e => Math.abs(e) <= q).length;
+  const W = 900, H = 300, T = 40, B = 36, s = mk("#figHC", W, H), P = [[30, 285], [325, 580], [620, 885]];
+  const head = (i, t) => txt(s, P[i][0], 18, t, { class: "t-ink t-b" });
+  head(0, "1. Backtest: record each miss"); head(1, "2. Sort the misses, pick q̂"); head(2, "3. Put ± q̂ around new forecasts");
+  // panel 1: forecast vs actual on past weeks
+  { const [x0, x1] = P[0], m = Math.min(n, 19), x = lin(0, m, x0, x1), lvl0 = 50, y = lin(lvl0 - 30, lvl0 + 30, H - B, T);
+    const f = i => lvl0 + 10 * Math.sin(i / 2.5);
+    el("path", { d: path(Array.from({ length: m * 4 + 1 }, (_, j) => [x(j / 4), y(f(j / 4))])), fill: "none", stroke: css("a1"), "stroke-width": 2 }, s);
+    for (let i = 0; i < m; i++) { const xi = x(i + 0.5), fy = f(i + 0.5), ay = fy + Math.max(-29, Math.min(29, past[i]));
+      el("line", { x1: xi, x2: xi, y1: y(fy), y2: y(ay), stroke: css("muted"), "stroke-width": 3 }, s);
+      el("circle", { cx: xi, cy: y(ay), r: 3.5, fill: css("ink") }, s); }
+    txt(s, x0, H - 14, m < n ? `first ${m} of ${n} past weeks` : `${n} past weeks`);
+    txt(s, x1, T - 6, "blue = forecast · dot = actual", { "text-anchor": "end" }); }
+  // panel 2: sorted misses
+  { const [x0, x1] = P[1], mx = Math.max(...srt) * 1.08, x = lin(0, n, x0, x1), y = lin(0, mx, H - B, T), bw = Math.max(1, x(1) - x(0) - (n > 40 ? 0.5 : 3));
+    srt.forEach((v, i) => el("rect", { x: x(i) + (x(1) - x(0) - bw) / 2, y: y(v), width: bw, height: H - B - y(v), fill: i === Math.min(k, n) - 1 ? css(short ? "warn" : "a2") : css(i < k ? "a1" : "muted"), opacity: i === Math.min(k, n) - 1 ? 1 : 0.55 }, s));
+    el("line", { x1: x0, x2: x1, y1: y(q), y2: y(q), stroke: css(short ? "warn" : "a2"), "stroke-dasharray": "4 3", "stroke-width": 1.5 }, s);
+    txt(s, x0 + 2, y(q) - 6, `q̂ = ${q.toFixed(1)}`, { style: `fill:var(--${short ? "warn" : "a2"});font-weight:700` });
+    el("line", { x1: x0, x2: x1, y1: H - B, y2: H - B, class: "ax" }, s);
+    txt(s, (x0 + x1) / 2, H - 14, short ? `needs the ${k}th smallest of ${n}: not enough misses` : `the ⌈(${n}+1)×${lvl.toFixed(2)}⌉ = ${k}th smallest of ${n}`, { "text-anchor": "middle", style: short ? "fill:var(--warn)" : "" }); }
+  // panel 3: 200 new weeks, actual minus forecast, with the band
+  { const [x0, x1] = P[2], x = lin(0, 200, x0, x1), y = lin(-30, 30, H - B, T);
+    el("rect", { x: x0, y: y(q), width: x1 - x0, height: y(-q) - y(q), fill: "color-mix(in srgb,var(--a1) 18%,transparent)" }, s);
+    el("line", { x1: x0, x2: x1, y1: y(0), y2: y(0), stroke: css("a1"), "stroke-width": 2 }, s);
+    fut.forEach((e, i) => { const inn = Math.abs(e) <= q; el("circle", { cx: x(i + 0.5), cy: y(Math.max(-29, Math.min(29, e))), r: inn ? 2 : 2.8, fill: css(inn ? "ink" : "warn"), opacity: inn ? 0.45 : 0.9 }, s); });
+    const halo = { "text-anchor": "end", class: "t-ink", style: "paint-order:stroke;stroke:#fff;stroke-width:4px" };
+    txt(s, x1, y(q) - 4, "forecast + q̂", halo); txt(s, x1, y(-q) + 13, "forecast − q̂", halo);
+    txt(s, (x0 + x1) / 2, H - 14, "200 new weeks: actual − forecast", { "text-anchor": "middle" }); }
+  // one past sample is luck; repeat steps 1-3 many times to see what the promise means
+  const rr = rng(4242 + n), S = 3000; let hit = 0;
+  for (let j = 0; j < S; j++) { const a = Array.from({ length: n }, () => Math.abs(hcErr(rr))).sort((u, v) => u - v); if (Math.abs(hcErr(rr)) <= a[Math.min(k, n) - 1]) hit++; }
+  const pct = inside / 2, avg = 100 * hit / S, ok = avg >= lvl * 100 - 1.5;
+  $("#hcOut").innerHTML = `Promise ${Math.round(lvl * 100)}% · q̂ is the ${short ? `largest miss (the ${k}th does not exist)` : `${k}th smallest of ${n} misses`} · this time ${pct.toFixed(0)}% of 200 new weeks inside · repeated ${fmt(S)} times: <b style="color:var(--${ok ? "a3" : "warn"})">${avg.toFixed(0)}%</b> on average` + (short ? `, at most ${Math.round(100 * n / (n + 1))}% with ${n} misses` : "");
+}
+$("#hcLvl").addEventListener("input", drawHC);
+seg("#hcN", v => { hcN = +v; drawHC(); });
+$("#hcNew").addEventListener("click", () => { hcPast++; drawHC(); });
+$("#hcTest").addEventListener("click", () => { hcFut++; drawHC(); });
+drawHC();
+
+}
 if (document.querySelector("#cfN")) {
 /* ---------------- conformal */
 let cfLevel = 0.8;
