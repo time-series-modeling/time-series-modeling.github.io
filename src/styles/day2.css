@@ -64,3 +64,9 @@
 .d2 .smp-a:hover { text-decoration: underline; }
 .d2 #smpTable th { text-transform: none; letter-spacing: 0; font-family: var(--f-mono); }
 .d2 #smpTable td, .d2 #smpTable th { white-space: nowrap; font-family: var(--f-mono); font-size: 0.78rem; }
+.d2 .raw-file { display: flex; flex-direction: column; gap: 0.35rem; }
+.d2 .raw-name { font-weight: 700; color: var(--ink); }
+.d2 .raw-rows { max-height: none; }
+.d2 .raw-tbl th { text-transform: none; letter-spacing: 0; font-family: var(--f-mono); white-space: nowrap; color: var(--ink); }
+.d2 .raw-tbl td { font-family: var(--f-mono); font-size: 0.78rem; white-space: nowrap; }
+.d2 .raw-t { font-weight: 400; color: var(--muted); font-size: 0.7rem; }

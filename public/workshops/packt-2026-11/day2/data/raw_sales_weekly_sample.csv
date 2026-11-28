@@ -1,0 +1,9 @@
+unique_id,week_start,sales_units,is_promotional,sale_price,regular_price,days_in_week,sale_class,has_any_promo,n_promo_weeks,has_promo_in_forecast,n_promo_weeks_in_forecast,promo_ratio
+11520_S1,2024-09-04,57420.0,true,1.2465249042145599,2.5,154,E,true,55,true,7,0.514
+11520_S1,2024-09-11,17446.0,false,2.518184110970999,2.5,154,E,true,55,true,7,0.514
+11520_S1,2024-09-18,48290.0,true,1.2497220956719814,2.5,154,E,true,55,true,7,0.514
+11520_S1,2024-09-25,27874.0,false,2.007071823204416,2.5,154,E,true,55,true,7,0.514
+17811_S1,2024-09-04,110370.0,false,4.492374558303883,4.7,273,B,false,0,false,0,0.0
+17811_S1,2024-09-11,103857.0,false,4.517236199774693,4.7,273,B,false,0,false,0,0.0
+13103_S1,2024-09-04,0.0,false,10.0,10.0,280,J,false,0,false,0,0.0
+13103_S1,2024-09-11,80.0,false,10.550000000000008,10.0,280,J,false,0,false,0,0.0
