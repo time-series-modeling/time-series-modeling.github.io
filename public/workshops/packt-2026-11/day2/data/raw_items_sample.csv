@@ -1,0 +1,5 @@
+item_id,item_desc,brand_id,brand_name,own_brand,division_id,department_id,class_id,subclass_id,item_group_id,is_delisted
+11520,Chocolate peppermint crisp bar 35g,180,Confectionery Brand 46,false,9,121,241,211,569,false
+13103,Ground espresso coffee 250g,1088,Coffee Brand 08,false,16,28,489,427,262,false
+17811,Premium milk 1.5l,286,Milk Brand 02,false,2,1,280,1123,1446,false
+30,,287,Unbranded,false,15,,,,1464,false

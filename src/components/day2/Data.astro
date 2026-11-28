@@ -1,5 +1,6 @@
 ---
 import D from '../../data/day2.json';
+import RAW from '../../data/day2-raw-files.json';
 const R = D.res;
 const f = (v: number) => v.toLocaleString('en-US');
 const intShare = Math.round(100 * D.demand_types.intermittent / D.n_series);
@@ -8,6 +9,39 @@ const nodes = R.hier5.reduce((z: number, l: [string, number]) => z + l[1], 0);
 const jShare = D.sale_class.J / D.n_series;
 ---
 <section class="d2 part">  <div class="stats" id="stats"></div>
+
+  <div class="plate" id="raw-files">
+    <h3>The raw files, as they are</h3>
+    <p class="cap">The workshop data is four files. Below: every column with its raw name and type, and a few real rows, unchanged (full precision, <code>true</code>/<code>false</code>, empty = missing). Each table scrolls sideways; the CSV link has the same rows.</p>
+    {RAW.map((F) => (
+      <div class="raw-file">
+        <p><code class="raw-name">{F.file}</code> <span class="cap">{f(F.rows)} rows × {F.cols.length} columns · <a class="smp-a" href={`/workshops/packt-2026-11/day2/data/${F.csv}`} download>these rows as CSV</a></span></p>
+        <p class="cap">{F.note}{Object.keys(F.nulls).length > 0 && <> Missing values: {Object.entries(F.nulls).map(([c, n]) => `${c} ${f(n as number)}`).join(', ')}.</>}</p>
+        <div class="smp-rows raw-rows"><table class="mtable raw-tbl">
+          <thead><tr>{F.cols.map(([c, t]) => <th>{c}<br /><span class="raw-t">{t}</span></th>)}</tr></thead>
+          <tbody>{F.sample.map((r) => <tr>{r.map((v) => <td>{v}</td>)}</tr>)}</tbody>
+        </table></div>
+      </div>
+    ))}
+    <p class="take">Only some of these columns feed the models: <code>sales_units</code> is the target; <code>is_promotional</code>, <code>regular_price</code> and <code>sale_price</code> (which Day 1 treats as leaky in the future) are the inputs; <code>sale_class</code> and the hierarchy ids slice results and build Lab 05's hierarchy. <code>days_in_week</code> is not days in the week (values 2 to 280, mostly constant per item) and no lab uses it.</p>
+  </div>
+
+  <div class="plate" id="sample">
+    <h3>Explore the raw data: 200 items, every week</h3>
+    <p class="cap">This is what the labs start from: one row per item per week in <code>sales_weekly.parquet</code>, with the description and hierarchy from <code>items.csv</code> and <code>hierarchy.csv</code>. Pick an item, or filter by demand type.</p>
+    <div class="ctrl">
+      <div class="seg" id="smpType"><button aria-pressed="true" data-v="all">All</button><button aria-pressed="false" data-v="smooth">Smooth</button><button aria-pressed="false" data-v="erratic">Erratic</button><button aria-pressed="false" data-v="intermittent">Intermittent</button><button aria-pressed="false" data-v="lumpy">Lumpy</button></div>
+      <input id="smpFind" class="smp-in" type="search" placeholder="search: milk, coffee, Confectionery, 11520 …" aria-label="Search items" />
+      <button class="btn" id="smpRand" type="button">Random item</button>
+    </div>
+    <div class="ctrl"><select id="smpPick" class="smp-in smp-pick" aria-label="Item"></select><span class="cap" id="smpCount"></span></div>
+    <div class="readout" id="smpInfo">Loading the sample …</div>
+    <div class="fig" id="figSmp"></div>
+    <div class="legend"><span><i style="background:var(--ink)"></i>sales_units</span><span><i style="background:color-mix(in srgb,var(--a2) 25%,transparent)"></i>is_promotional week</span><span><i style="background:var(--a4)"></i>sale_price (right axis)</span><span><i style="background:var(--muted)"></i>regular_price (dashed)</span></div>
+    <p class="cap">Below: every row of this item in <code>sales_weekly.parquet</code>, all 13 columns with their raw names and values (promotion weeks tinted). Scroll sideways for the rest.</p>
+    <div class="smp-rows"><table class="mtable num-right" id="smpTable"></table></div>
+    <p class="cap">A sample of 200 of the {f(D.n_series)} series the labs model: 50 per demand type, spread over the sale classes, plus the examples used in the slides. Values are the raw file's, unchanged (sale_price is the average price paid in the week). <a id="smpCsv" class="smp-a" download>Download the sample as CSV</a>, the same rows and columns as <code>sales_weekly.parquet</code> (<span id="smpRows">…</span> rows) or get the full data from the workshop repository.</p>
+  </div>
 
   <div class="plate">
     <h3>Total weekly units in the store, and where the split falls</h3>

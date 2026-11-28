@@ -54,3 +54,19 @@
 .d2 .mtable .sorth { font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 .d2 .mtable .dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; margin-right: 0.4rem; }
 .d2 .mtable.num-right th:not(:first-child) { text-align: right; }
+.d2 .smp-in { font: inherit; font-size: 0.85rem; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.4rem 0.6rem; background: var(--panel); color: var(--ink); min-width: 0; }
+.d2 .smp-pick { flex: 1 1 22rem; max-width: 100%; }
+.d2 #smpFind { flex: 1 1 14rem; }
+.d2 .smp-rows { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 0.5rem; }
+.d2 .smp-rows .mtable th { position: sticky; top: 0; }
+.d2 .smp-rows tr.promo td { background: color-mix(in srgb, var(--a2) 10%, transparent); }
+.d2 .smp-a { color: var(--a1); font-weight: 600; }
+.d2 .smp-a:hover { text-decoration: underline; }
+.d2 #smpTable th { text-transform: none; letter-spacing: 0; font-family: var(--f-mono); }
+.d2 #smpTable td, .d2 #smpTable th { white-space: nowrap; font-family: var(--f-mono); font-size: 0.78rem; }
+.d2 .raw-file { display: flex; flex-direction: column; gap: 0.35rem; }
+.d2 .raw-name { font-weight: 700; color: var(--ink); }
+.d2 .raw-rows { max-height: none; }
+.d2 .raw-tbl th { text-transform: none; letter-spacing: 0; font-family: var(--f-mono); white-space: nowrap; color: var(--ink); }
+.d2 .raw-tbl td { font-family: var(--f-mono); font-size: 0.78rem; white-space: nowrap; }
+.d2 .raw-t { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
